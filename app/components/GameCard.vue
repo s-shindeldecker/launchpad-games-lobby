@@ -40,7 +40,10 @@
       <span
         v-for="badge in game.badges"
         :key="badge"
-        class="rounded-full border border-white/10 px-2 py-0.5"
+        :class="[
+          'rounded-full border border-white/10',
+          chipSize === 'compact' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1'
+        ]"
       >
         {{ badge }}
       </span>
@@ -86,8 +89,10 @@ const props = defineProps<{
     image?: string
     imageFocus?: 'top' | 'bottom' | 'center'
     imageSize?: 'default' | 'large'
+    chipSize?: 'default' | 'compact'
   }
 }>()
 
 const imageSize = computed(() => props.game.imageSize ?? 'default')
+const chipSize = computed(() => props.game.chipSize ?? 'default')
 </script>

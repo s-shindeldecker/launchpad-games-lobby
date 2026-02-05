@@ -47,13 +47,19 @@
         </div>
       </header>
 
-      <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <section
+        :class="[
+          'grid gap-6 md:grid-cols-2',
+          plpGridClassMap[plpColumns] ?? 'xl:grid-cols-3'
+        ]"
+      >
         <GameCard
           v-for="game in games"
           :key="game.slug"
           :game="{
             ...game,
-            imageSize: plpLargeImages.value ? 'large' : 'default'
+            imageSize: plpLargeImages.value ? 'large' : 'default',
+            chipSize: plpColumns >= 5 ? 'compact' : 'default'
           }"
         />
       </section>
@@ -72,12 +78,25 @@ const plpSubtitle = ref(
   'Browse the individual games featured across Launchpad party packs. Each pack includes a set of games, and the packs are what you can purchase.'
 )
 const plpLargeImages = ref(false)
+const plpColumns = ref(3)
+const plpGridClassMap: Record<number, string> = {
+  2: 'xl:grid-cols-2',
+  3: 'xl:grid-cols-3',
+  4: 'xl:grid-cols-4',
+  5: 'xl:grid-cols-5'
+}
+
+const clampColumns = (value: number) => Math.min(5, Math.max(2, value))
 
 watchEffect(() => {
   if (!isReady.value) return
   plpTitle.value = getFlagValue('plp-title', plpTitle.value)
   plpSubtitle.value = getFlagValue('plp-subtitle', plpSubtitle.value)
   plpLargeImages.value = getFlagValue('plp-large-images', false)
+  const columns = clampColumns(
+    getFlagValue('plp-number-of-columns', plpColumns.value)
+  )
+  plpColumns.value = columns
 })
 
 const games = [
