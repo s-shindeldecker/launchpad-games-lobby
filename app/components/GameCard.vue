@@ -1,0 +1,63 @@
+<template>
+  <article
+    class="group flex h-full flex-col rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-slate-950/60 transition hover:border-fuchsia-400/50 hover:bg-slate-900/80"
+  >
+    <div class="flex items-center justify-between text-xs text-slate-300">
+      <span class="rounded-full bg-white/10 px-2 py-1">{{ game.pack }}</span>
+      <span v-if="game.detailed" class="text-fuchsia-200">Featured</span>
+      <span v-else class="text-slate-500">Coming Soon</span>
+    </div>
+
+    <div class="mt-4">
+      <h3 class="text-lg font-semibold text-white">{{ game.name }}</h3>
+      <p class="mt-2 text-sm text-slate-200/90">{{ game.tagline }}</p>
+    </div>
+
+    <div class="mt-4 flex flex-wrap gap-2 text-[11px] text-white/70">
+      <span
+        v-for="badge in game.badges"
+        :key="badge"
+        class="rounded-full border border-white/10 px-2 py-0.5"
+      >
+        {{ badge }}
+      </span>
+    </div>
+
+    <div class="mt-6 flex items-center justify-between text-xs text-slate-300">
+      <span>{{ game.players }}</span>
+      <span>{{ game.platforms.join(' · ') }}</span>
+    </div>
+
+    <div class="mt-6">
+      <NuxtLink
+        v-if="game.detailed"
+        :to="`/games/${game.slug}`"
+        class="inline-flex w-full items-center justify-center rounded-full bg-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+      >
+        View Details
+      </NuxtLink>
+      <button
+        v-else
+        disabled
+        class="inline-flex w-full items-center justify-center rounded-full border border-white/10 px-4 py-2 text-sm text-slate-500"
+      >
+        Details Soon
+      </button>
+    </div>
+  </article>
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  game: {
+    slug: string
+    name: string
+    tagline: string
+    pack: string
+    players: string
+    badges: string[]
+    platforms: string[]
+    detailed: boolean
+  }
+}>()
+</script>
