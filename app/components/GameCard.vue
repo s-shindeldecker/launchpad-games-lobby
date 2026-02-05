@@ -7,7 +7,14 @@
         v-if="game.image"
         :src="game.image"
         :alt="game.name"
-        class="h-48 w-full object-cover object-top"
+        :class="[
+          'h-48 w-full object-cover',
+          game.imageFocus === 'bottom'
+            ? 'object-bottom'
+            : game.imageFocus === 'center'
+              ? 'object-center'
+              : 'object-top'
+        ]"
       />
       <div
         v-else
@@ -74,6 +81,7 @@ defineProps<{
     platforms: string[]
     detailed: boolean
     image?: string
+    imageFocus?: 'top' | 'bottom' | 'center'
   }
 }>()
 </script>

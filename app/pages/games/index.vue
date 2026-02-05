@@ -103,7 +103,9 @@ const games = [
     players: '1-6 players',
     badges: ['Co-op', 'Puzzle', 'Timers'],
     platforms: ['Steam', 'Switch', 'Web'],
-    detailed: true
+    detailed: true,
+    image: '/images/laugh-labyrinth.png',
+    imageFocus: 'bottom'
   },
   {
     slug: 'blastbeat-battle',
@@ -113,7 +115,9 @@ const games = [
     players: '2-10 players',
     badges: ['Rhythm', 'Party', 'Fast'],
     platforms: ['Steam', 'PS5', 'Xbox'],
-    detailed: true
+    detailed: true,
+    image: '/images/blastbeat-battle.png',
+    imageFocus: 'center'
   },
   {
     slug: 'neon-quizline',
@@ -123,7 +127,9 @@ const games = [
     players: '2-8 players',
     badges: ['Trivia', 'Audience', 'Retro'],
     platforms: ['Steam', 'Switch'],
-    detailed: false
+    detailed: false,
+    image: '/images/neon-quizline.png',
+    imageFocus: 'center'
   },
   {
     slug: 'spacetop-scribbles',
@@ -133,7 +139,8 @@ const games = [
     players: '3-8 players',
     badges: ['Drawing', 'Comedy', 'Creative'],
     platforms: ['Steam', 'Web'],
-    detailed: false
+    detailed: false,
+    image: '/images/spacetop-scribbles.png'
   },
   {
     slug: 'mystic-mashup',
@@ -143,7 +150,8 @@ const games = [
     players: '2-8 players',
     badges: ['Wordplay', 'Fast', 'Wildcard'],
     platforms: ['Steam', 'Switch', 'PS5'],
-    detailed: false
+    detailed: false,
+    image: '/images/mystic-mashup.png'
   }
 ]
 </script>
