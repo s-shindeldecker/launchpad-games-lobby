@@ -8,7 +8,8 @@
         :src="game.image"
         :alt="game.name"
         :class="[
-          'h-48 w-full object-cover',
+          imageSize === 'large' ? 'h-56' : 'h-48',
+          'w-full object-cover',
           game.imageFocus === 'bottom'
             ? 'object-bottom'
             : game.imageFocus === 'center'
@@ -70,7 +71,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   game: {
     slug: string
     name: string
@@ -82,6 +85,9 @@ defineProps<{
     detailed: boolean
     image?: string
     imageFocus?: 'top' | 'bottom' | 'center'
+    imageSize?: 'default' | 'large'
   }
 }>()
+
+const imageSize = computed(() => props.game.imageSize ?? 'default')
 </script>

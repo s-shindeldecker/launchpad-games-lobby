@@ -9,6 +9,16 @@ pages for Jackbox Party Packs. Toggle characters are used as animated,
 expressive visual elements that represent the fun and chaos of party gameplay
 — not real players or online users.
 
+## LaunchDarkly
+
+This demo uses the LaunchDarkly JavaScript client SDK for a single client-side
+flag (`plp-large-images`). Configure a public client ID in local development
+and in Vercel:
+
+```
+NUXT_PUBLIC_LD_CLIENT_ID=your_client_id_here
+```
+
 ## Setup
 
 Make sure to install dependencies:

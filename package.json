@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "launchdarkly-js-client-sdk": "^3.9.0",
     "nuxt": "^4.3.0",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4"

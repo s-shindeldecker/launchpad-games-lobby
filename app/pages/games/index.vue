@@ -48,7 +48,14 @@
       </header>
 
       <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <GameCard v-for="game in games" :key="game.slug" :game="game" />
+        <GameCard
+          v-for="game in games"
+          :key="game.slug"
+          :game="{
+            ...game,
+            imageSize: plpLargeImages ? 'large' : 'default'
+          }"
+        />
       </section>
     </section>
   </div>
@@ -56,10 +63,14 @@
 
 <script setup lang="ts">
 import GameCard from '~/components/GameCard.vue'
+import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 
 const plpTitle = 'Games in the Packs'
 const plpSubtitle =
   'Browse the individual games featured across Launchpad party packs. Each pack includes a set of games, and the packs are what you can purchase.'
+
+const { getFlagValue } = useLaunchDarkly()
+const plpLargeImages = getFlagValue('plp-large-images', false)
 
 const games = [
   {
