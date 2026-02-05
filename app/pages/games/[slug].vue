@@ -85,17 +85,18 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const detailedGames = {
-  'starbound-odyssey': {
-    name: 'Starbound Odyssey',
+  'talkin-ship': {
+    name: "Talkin' Ship",
     pack: 'Party Pack 10',
-    tagline: 'Zero-gravity trivia with cosmic consequences.',
-    players: '2-8 players',
-    badges: ['Trivia', 'Teamplay', 'Buzzer'],
+    tagline:
+      'A quick-paced, witty party game where every round demands a ship pun.',
+    players: '3-8 players',
+    badges: ['Wordplay', 'Fast', 'Witty'],
     platforms: ['Steam', 'Switch', 'PS5', 'Xbox'],
     highlights: [
-      'Answer mind-bending questions while navigating a drifting space station.',
-      'Team boosts and sabotage rounds keep everyone yelling.',
-      'Spectator mode lets the crowd trigger gravity glitches.'
+      'Beat your friends to the cleverest ship-related pun for each scenario.',
+      'Lightning rounds reward speed, charm, and perfectly cheesy delivery.',
+      'Crowd prompts keep the room roaring and the jokes escalating.'
     ],
     storeLinks: [
       { label: 'Buy on Steam', url: 'https://store.steampowered.com/' },

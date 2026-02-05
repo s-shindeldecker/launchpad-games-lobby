@@ -19,7 +19,7 @@
           Browse Games
         </NuxtLink>
         <NuxtLink
-          to="/games/starbound-odyssey"
+          to="/games/talkin-ship"
           class="rounded-full border border-white/20 px-6 py-3 text-sm text-white/90"
         >
           Featured Pack

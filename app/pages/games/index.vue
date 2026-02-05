@@ -22,7 +22,7 @@
               Featured Pack
             </p>
             <p class="mt-2 text-lg font-semibold text-white">
-              Starbound Odyssey
+              Talkin' Ship
             </p>
             <p class="mt-1 text-xs text-slate-400">Party Pack 10</p>
           </div>
@@ -60,14 +60,16 @@ import GameCard from '~/components/GameCard.vue'
 
 const games = [
   {
-    slug: 'starbound-odyssey',
-    name: 'Starbound Odyssey',
-    tagline: 'Zero-gravity trivia with cosmic consequences.',
+    slug: 'talkin-ship',
+    name: "Talkin' Ship",
+    tagline:
+      'Race to drop the cleverest ship-related pun for every wild situation.',
     pack: 'Party Pack 10',
-    players: '2-8 players',
-    badges: ['Trivia', 'Teamplay', 'Buzzer'],
+    players: '3-8 players',
+    badges: ['Wordplay', 'Fast', 'Witty'],
     platforms: ['Steam', 'Switch', 'PS5', 'Xbox'],
-    detailed: true
+    detailed: true,
+    image: '/images/talkin-ship.png'
   },
   {
     slug: 'laugh-labyrinth',

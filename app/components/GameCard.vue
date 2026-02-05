@@ -2,6 +2,21 @@
   <article
     class="group flex h-full flex-col rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-slate-950/60 transition hover:border-fuchsia-400/50 hover:bg-slate-900/80"
   >
+    <div class="relative mb-4 overflow-hidden rounded-2xl border border-white/10">
+      <img
+        v-if="game.image"
+        :src="game.image"
+        :alt="game.name"
+        class="h-48 w-full object-cover object-top"
+      />
+      <div
+        v-else
+        class="flex h-48 w-full items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-xs text-slate-400"
+      >
+        Artwork coming soon
+      </div>
+    </div>
+
     <div class="flex items-center justify-between text-xs text-slate-300">
       <span class="rounded-full bg-white/10 px-2 py-1">{{ game.pack }}</span>
       <span v-if="game.detailed" class="text-fuchsia-200">Featured</span>
@@ -58,6 +73,7 @@ defineProps<{
     badges: string[]
     platforms: string[]
     detailed: boolean
+    image?: string
   }
 }>()
 </script>
