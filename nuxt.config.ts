@@ -5,6 +5,11 @@ export default defineNuxtConfig({
   ssr: false,
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/tailwind.css'],
+  runtimeConfig: {
+    public: {
+      ldClientId: process.env.NUXT_PUBLIC_LD_CLIENT_ID
+    }
+  },
   app: {
     head: {
       title: 'Launchpad Games Lobby',

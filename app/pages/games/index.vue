@@ -53,7 +53,7 @@
           :key="game.slug"
           :game="{
             ...game,
-            imageSize: plpLargeImages ? 'large' : 'default'
+            imageSize: plpLargeImages.value ? 'large' : 'default'
           }"
         />
       </section>
@@ -62,15 +62,23 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watchEffect } from 'vue'
 import GameCard from '~/components/GameCard.vue'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 
-const plpTitle = 'Games in the Packs'
-const plpSubtitle =
+const { getFlagValue, isReady } = useLaunchDarkly()
+const plpTitle = ref('Games in the Packs')
+const plpSubtitle = ref(
   'Browse the individual games featured across Launchpad party packs. Each pack includes a set of games, and the packs are what you can purchase.'
+)
+const plpLargeImages = ref(false)
 
-const { getFlagValue } = useLaunchDarkly()
-const plpLargeImages = getFlagValue('plp-large-images', false)
+watchEffect(() => {
+  if (!isReady.value) return
+  plpTitle.value = getFlagValue('plp-title', plpTitle.value)
+  plpSubtitle.value = getFlagValue('plp-subtitle', plpSubtitle.value)
+  plpLargeImages.value = getFlagValue('plp-large-images', false)
+})
 
 const games = [
   {

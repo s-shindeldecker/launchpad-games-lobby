@@ -16,8 +16,15 @@ const getAnonKey = () => {
 }
 
 export default defineNuxtPlugin(async () => {
-  const clientId = process.env.NUXT_PUBLIC_LD_CLIENT_ID
+  const { public: publicConfig } = useRuntimeConfig()
+  const clientId =
+    publicConfig.ldClientId ?? publicConfig.NUXT_PUBLIC_LD_CLIENT_ID
   if (!clientId) {
+    if (import.meta.dev) {
+      console.info(
+        '[LaunchDarkly] Missing client ID. Set NUXT_PUBLIC_LD_CLIENT_ID.'
+      )
+    }
     return {
       provide: {
         launchDarkly: {
@@ -40,6 +47,9 @@ export default defineNuxtPlugin(async () => {
   ldClient = initialize(clientId, context)
   await ldClient.waitForInitialization()
   isReady.value = true
+  if (import.meta.dev) {
+    console.info('[LaunchDarkly] Client initialized', { key: context.key })
+  }
 
   return {
     provide: {
