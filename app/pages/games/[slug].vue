@@ -34,6 +34,17 @@
           </span>
         </div>
 
+        <div
+          v-if="game.image"
+          class="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60"
+        >
+          <img
+            :src="game.image"
+            :alt="game.name"
+            class="h-auto w-full object-contain"
+          />
+        </div>
+
         <div class="mt-8 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
           <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
             <h2 class="text-lg font-semibold text-white">What to Expect</h2>
@@ -93,6 +104,7 @@ const detailedGames = {
     players: '3-8 players',
     badges: ['Wordplay', 'Fast', 'Witty'],
     platforms: ['Steam', 'Switch', 'PS5', 'Xbox'],
+    image: '/images/talkin-ship.png',
     highlights: [
       'Beat your friends to the cleverest ship-related pun for each scenario.',
       'Lightning rounds reward speed, charm, and perfectly cheesy delivery.',
@@ -111,6 +123,7 @@ const detailedGames = {
     players: '1-6 players',
     badges: ['Co-op', 'Puzzle', 'Timers'],
     platforms: ['Steam', 'Switch', 'Web'],
+    image: '/images/laugh-labyrinth.png',
     highlights: [
       'Solve riddles together before the lab collapses.',
       'Swap roles mid-round to keep the crew coordinated.',
@@ -130,6 +143,7 @@ const detailedGames = {
     players: '3-8 players',
     badges: ['Creative', 'Mashup', 'Party'],
     platforms: ['Steam', 'Switch', 'Web'],
+    image: '/images/tag-it-toggle-it.png',
     highlights: [
       'Sketch two takes on the same concept, then flip between them on the fly.',
       'Combine quick tags into surprisingly clever or off-beat sayings.',
@@ -149,6 +163,7 @@ const detailedGames = {
     players: '2-8 players',
     badges: ['Fantasy', 'Challenge', 'Party'],
     platforms: ['Steam', 'Switch', 'Web'],
+    image: '/images/tavern-games.png',
     highlights: [
       'Challenge a rowdy cast of magical locals in rotating tavern contests.',
       'Swap between rounds of luck, skill, and quickfire storytelling.',
@@ -167,6 +182,7 @@ const detailedGames = {
     players: '2-10 players',
     badges: ['Rhythm', 'Party', 'Fast'],
     platforms: ['Steam', 'PS5', 'Xbox'],
+    image: '/images/blastbeat-battle.png',
     highlights: [
       'Sync to the beat or get launched off the stage.',
       'Quickfire rounds keep the party energy high.',
@@ -189,6 +205,7 @@ const game = computed(
       players: 'TBD',
       badges: ['TBD'],
       platforms: ['TBD'],
+      image: '',
       highlights: [
         'This game is still incubating inside the Launchpad labs.',
         'More details will appear as soon as the pack is announced.'
