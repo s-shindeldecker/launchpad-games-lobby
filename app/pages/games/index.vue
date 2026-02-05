@@ -8,11 +8,10 @@
               Launchpad Games
             </p>
             <h1 class="mt-3 text-4xl font-semibold sm:text-5xl">
-              Party Pack Games
+              {{ plpTitle }}
             </h1>
             <p class="mt-3 max-w-2xl text-base text-slate-200/90">
-              Explore the lineup of Launchpad party games. Pick a pack, gather
-              your crew, and start the chaos across Steam, console, and web.
+              {{ plpSubtitle }}
             </p>
           </div>
           <div
@@ -57,6 +56,10 @@
 
 <script setup lang="ts">
 import GameCard from '~/components/GameCard.vue'
+
+const plpTitle = 'Games in the Packs'
+const plpSubtitle =
+  'Browse the individual games featured across Launchpad party packs. Each pack includes a set of games, and the packs are what you can purchase.'
 
 const games = [
   {
