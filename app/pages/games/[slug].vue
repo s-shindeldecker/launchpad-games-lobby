@@ -122,6 +122,44 @@ const detailedGames = {
       { label: 'Buy on Web', url: 'https://launchpad.games/' }
     ]
   },
+  'tag-it-toggle-it': {
+    name: "Tag it & Toggle it",
+    pack: 'Party Pack 10',
+    tagline:
+      'Create two or more versions of your graffiti art, then toggle into the funniest phrase.',
+    players: '3-8 players',
+    badges: ['Creative', 'Mashup', 'Party'],
+    platforms: ['Steam', 'Switch', 'Web'],
+    highlights: [
+      'Sketch two takes on the same concept, then flip between them on the fly.',
+      'Combine quick tags into surprisingly clever or off-beat sayings.',
+      'Fast rounds keep the energy high and the laughs constant.'
+    ],
+    storeLinks: [
+      { label: 'Buy on Steam', url: 'https://store.steampowered.com/' },
+      { label: 'Buy on Nintendo', url: 'https://www.nintendo.com/store/' },
+      { label: 'Buy on Web', url: 'https://launchpad.games/' }
+    ]
+  },
+  'tavern-games': {
+    name: 'Tavern Games',
+    pack: 'Party Pack 10',
+    tagline:
+      'Can you beat the fantastical creatures at this tavern in games from their own magical world?',
+    players: '2-8 players',
+    badges: ['Fantasy', 'Challenge', 'Party'],
+    platforms: ['Steam', 'Switch', 'Web'],
+    highlights: [
+      'Challenge a rowdy cast of magical locals in rotating tavern contests.',
+      'Swap between rounds of luck, skill, and quickfire storytelling.',
+      'Earn cheers, jeers, and bragging rights from the fantasy crowd.'
+    ],
+    storeLinks: [
+      { label: 'Buy on Steam', url: 'https://store.steampowered.com/' },
+      { label: 'Buy on Nintendo', url: 'https://www.nintendo.com/store/' },
+      { label: 'Buy on Web', url: 'https://launchpad.games/' }
+    ]
+  },
   'blastbeat-battle': {
     name: 'Blastbeat Battle',
     pack: 'Party Pack 10',

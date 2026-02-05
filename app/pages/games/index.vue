@@ -72,6 +72,30 @@ const games = [
     image: '/images/talkin-ship.png'
   },
   {
+    slug: 'tavern-games',
+    name: 'Tavern Games',
+    tagline:
+      'Can you beat the fantastical creatures at this tavern in games from their own magical world?',
+    pack: 'Party Pack 10',
+    players: '2-8 players',
+    badges: ['Fantasy', 'Challenge', 'Party'],
+    platforms: ['Steam', 'Switch', 'Web'],
+    detailed: true,
+    image: '/images/tavern-games.png'
+  },
+  {
+    slug: 'tag-it-toggle-it',
+    name: "Tag it & Toggle it",
+    tagline:
+      'Make two versions of your graffiti art and toggle them into wild phrases.',
+    pack: 'Party Pack 10',
+    players: '3-8 players',
+    badges: ['Creative', 'Mashup', 'Party'],
+    platforms: ['Steam', 'Switch', 'Web'],
+    detailed: true,
+    image: '/images/tag-it-toggle-it.png'
+  },
+  {
     slug: 'laugh-labyrinth',
     name: 'Laugh Labyrinth',
     tagline: 'Co-op puzzle rooms for the most chaotic of friends.',
