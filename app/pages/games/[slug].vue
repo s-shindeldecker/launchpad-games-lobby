@@ -207,9 +207,9 @@ const detailedGames = {
     platforms: ['Steam', 'Switch', 'Web'],
     image: '/images/tavern-games.png',
     highlights: [
-      'Challenge a rowdy cast of magical locals in rotating tavern contests.',
-      'Swap between rounds of luck, skill, and quickfire storytelling.',
-      'Earn cheers, jeers, and bragging rights from the fantasy crowd.'
+      'Challenge a rowdy cast of magical locals in rotating tavern contests — including crowd favorites like Mittens, the game no one fully understands but everyone insists is “very traditional.”',
+      'Bounce between rounds of luck, skill, and quickfire storytelling, capped off with a red potion drinking contest that absolutely has no long-term side effects. Probably.',
+      'Perform for a wildly opinionated audience of 50,000 roaring orcs, who will reward brilliance with thunderous cheers and punish hesitation with immediate, unforgettable jeers.'
     ],
     storeLinks: [
       { label: 'Buy on Steam', url: 'https://store.steampowered.com/' },
