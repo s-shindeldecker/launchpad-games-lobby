@@ -1,6 +1,22 @@
 <template>
   <div class="px-6 pb-16 pt-10">
     <section class="mx-auto flex max-w-6xl flex-col gap-10">
+      <div
+        v-if="simulationIsRunning"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-6 text-center text-sm text-slate-200 backdrop-blur"
+      >
+        <div class="rounded-2xl border border-white/10 bg-slate-900/80 p-6">
+          <p class="text-xs uppercase tracking-[0.3em] text-fuchsia-300">
+            Simulation Running
+          </p>
+          <p class="mt-3 text-slate-200/90">
+            Hiding UI while simulated users rotate contexts.
+          </p>
+          <p class="mt-2 text-xs text-slate-400">
+            {{ simulationCompleted }} / {{ simulationTotal }} complete
+          </p>
+        </div>
+      </div>
       <header class="flex flex-col gap-6">
         <div class="flex flex-wrap items-start justify-between gap-6">
           <div>
@@ -153,6 +169,7 @@ const simulationProgress = computed(() => {
     Math.round((simulationCompleted.value / simulationTotal.value) * 100)
   )
 })
+const simulationIsRunning = computed(() => simulationInFlight.value > 0)
 const recordPlpFlagEvaluations = () => {
   // Ensure per-user exposure by evaluating PLP flags after identify.
   getFlagValue('plp-large-images', plpLargeImages.value)

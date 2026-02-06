@@ -85,12 +85,18 @@ const orderId = () => `order-${Date.now().toString(36)}`
 const handlePurchase = () => {
   if (!cartItems.value.length) return
   const cartValue = Number(subtotal.value.toFixed(2))
+  const itemCount = cartItems.value.reduce(
+    (total, item) => total + item.quantity,
+    0
+  )
   trackEvent('checkout_start', { cart_value: cartValue })
   trackEvent('purchase_complete', {
     order_id: orderId(),
     cart_value: cartValue,
     purchase_type: 'direct'
   })
+  trackEvent('items_purchased', {}, itemCount)
+  trackEvent('purchase_value', {}, cartValue)
   clearCart()
   closeDrawer()
 }

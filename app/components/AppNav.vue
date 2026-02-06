@@ -22,7 +22,9 @@
         <NuxtLink to="/games" class="text-slate-300 hover:text-white">
           Games
         </NuxtLink>
-        <a class="text-slate-300 hover:text-white" href="#">How to Play</a>
+        <NuxtLink to="/about" class="text-slate-300 hover:text-white">
+          About Us
+        </NuxtLink>
       </nav>
     </div>
   </aside>
