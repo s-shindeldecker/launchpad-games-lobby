@@ -65,7 +65,6 @@
       </section>
 
       <div
-        v-if="isDev"
         class="rounded-2xl border border-dashed border-fuchsia-400/50 bg-slate-950/60 px-4 py-3 text-xs text-fuchsia-200"
       >
         <p class="text-[11px] uppercase tracking-[0.3em] text-fuchsia-300">
@@ -131,7 +130,6 @@ const plpSubtitle = ref(
 )
 const plpLargeImages = ref(false)
 const plpColumns = ref(3)
-const isDev = import.meta.dev
 const plpVariant = computed(() => (plpLargeImages.value ? 'large' : 'control'))
 const { $launchDarkly } = useNuxtApp()
 const simulationUserLabel = computed(() => {
@@ -188,7 +186,6 @@ watchEffect(() => {
 })
 
 const runSimulationBatch = (count: number) => {
-  if (!import.meta.dev) return
   if (count <= 0) return
   simulationTotal.value += count
   console.info('[SIMULATION] Starting batch', {

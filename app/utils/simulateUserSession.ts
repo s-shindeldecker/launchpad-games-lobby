@@ -31,7 +31,6 @@ export const simulateUserSession = async ({
   trackEvent,
   identifyUser
 }: SimulationInput) => {
-  if (!import.meta.dev) return
   if (!games.length) {
     console.info('[SIMULATION] No games provided for simulation.')
     return

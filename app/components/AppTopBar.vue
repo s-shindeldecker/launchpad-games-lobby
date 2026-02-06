@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="isDev"
     class="sticky top-0 z-30 border-b border-white/10 bg-slate-950/90 px-6 py-3 text-xs text-slate-300 backdrop-blur"
   >
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4">
@@ -21,7 +20,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const isDev = import.meta.dev
 const { $launchDarkly } = useNuxtApp()
 
 const userLabel = computed(() => {
