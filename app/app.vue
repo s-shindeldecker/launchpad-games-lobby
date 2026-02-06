@@ -5,6 +5,7 @@
     <div class="flex min-h-screen">
       <AppNav />
       <div class="flex min-h-screen flex-1 flex-col">
+        <AppTopBar />
         <main class="flex-1">
           <NuxtPage />
         </main>
@@ -17,4 +18,5 @@
 <script setup lang="ts">
 import AppFooter from '~/components/AppFooter.vue'
 import AppNav from '~/components/AppNav.vue'
+import AppTopBar from '~/components/AppTopBar.vue'
 </script>

@@ -1,6 +1,15 @@
 <template>
   <div class="px-6 pb-16 pt-10">
     <section class="mx-auto flex max-w-6xl flex-col gap-10">
+      <div>
+        <NuxtLink
+          to="/games"
+          class="inline-flex items-center gap-2 text-xs text-slate-300 transition hover:text-white"
+        >
+          <span aria-hidden="true">←</span>
+          Back to games
+        </NuxtLink>
+      </div>
       <div
         class="rounded-3xl border border-white/10 bg-slate-900/60 p-8 shadow-2xl shadow-slate-950/60"
       >

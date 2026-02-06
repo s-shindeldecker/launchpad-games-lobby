@@ -63,15 +63,66 @@
           }"
         />
       </section>
+
+      <div
+        v-if="isDev"
+        class="rounded-2xl border border-dashed border-fuchsia-400/50 bg-slate-950/60 px-4 py-3 text-xs text-fuchsia-200"
+      >
+        <p class="text-[11px] uppercase tracking-[0.3em] text-fuchsia-300">
+          Simulation (dev only)
+        </p>
+        <p class="mt-2 text-slate-300">
+          Trigger simulated PLP sessions with demo events.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            class="rounded-full border border-fuchsia-400/40 px-3 py-1 text-xs text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+            @click="runSimulationBatch(10)"
+          >
+            Run 10
+          </button>
+          <button
+            class="rounded-full border border-fuchsia-400/40 px-3 py-1 text-xs text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+            @click="runSimulationBatch(100)"
+          >
+            Run 100
+          </button>
+          <button
+            class="rounded-full border border-fuchsia-400/40 px-3 py-1 text-xs text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+            @click="runSimulationBatch(500)"
+          >
+            Run 500
+          </button>
+        </div>
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>Progress</span>
+            <span>{{ simulationCompleted }} / {{ simulationTotal }}</span>
+          </div>
+          <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+            <div
+              class="h-full rounded-full bg-fuchsia-500 transition-[width] duration-300"
+              :style="{ width: `${simulationProgress}%` }"
+            ></div>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-500">
+            {{ simulationStatus }}
+          </p>
+          <p class="mt-2 text-[11px] text-slate-500">
+            Active user: {{ simulationUserLabel }}
+          </p>
+        </div>
+      </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watchEffect } from 'vue'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import GameCard from '~/components/GameCard.vue'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 import { trackEvent } from '~/utils/analytics'
+import { simulateUserSession } from '~/utils/simulateUserSession'
 
 const { getFlagValue, isReady } = useLaunchDarkly()
 const plpTitle = ref('Party Games Catalog')
@@ -80,6 +131,37 @@ const plpSubtitle = ref(
 )
 const plpLargeImages = ref(false)
 const plpColumns = ref(3)
+const isDev = import.meta.dev
+const plpVariant = computed(() => (plpLargeImages.value ? 'large' : 'control'))
+const { $launchDarkly } = useNuxtApp()
+const simulationUserLabel = computed(() => {
+  const context = $launchDarkly?.context?.value
+  if (!context) return 'User context unavailable'
+  const anonLabel = context.anonymous ? 'anonymous' : 'identified'
+  return `${context.key} (${anonLabel})`
+})
+const simulationTotal = ref(0)
+const simulationCompleted = ref(0)
+const simulationInFlight = ref(0)
+const simulationStatus = computed(() => {
+  if (!simulationTotal.value) return 'Idle'
+  if (simulationCompleted.value >= simulationTotal.value) return 'Complete'
+  return `Running (${simulationInFlight.value} active)`
+})
+const simulationProgress = computed(() => {
+  if (!simulationTotal.value) return 0
+  return Math.min(
+    100,
+    Math.round((simulationCompleted.value / simulationTotal.value) * 100)
+  )
+})
+const recordPlpFlagEvaluations = () => {
+  // Ensure per-user exposure by evaluating PLP flags after identify.
+  getFlagValue('plp-large-images', plpLargeImages.value)
+  getFlagValue('plp-number-of-columns', plpColumns.value)
+  getFlagValue('plp-title', plpTitle.value)
+  getFlagValue('plp-subtitle', plpSubtitle.value)
+}
 const plpGridClassMap: Record<number, string> = {
   2: 'xl:grid-cols-2',
   3: 'xl:grid-cols-3',
@@ -104,6 +186,41 @@ watchEffect(() => {
   )
   plpColumns.value = columns
 })
+
+const runSimulationBatch = (count: number) => {
+  if (!import.meta.dev) return
+  if (count <= 0) return
+  simulationTotal.value += count
+  console.info('[SIMULATION] Starting batch', {
+    count,
+    variant: plpVariant.value
+  })
+  for (let i = 0; i < count; i += 1) {
+    const stagger = Math.floor(Math.random() * 200)
+    setTimeout(() => {
+      simulationInFlight.value += 1
+      simulateUserSession({
+        variant: plpVariant.value,
+        games,
+        trackEvent,
+        identifyUser: async () => {
+          if (!$launchDarkly?.setContext || !$launchDarkly?.createUserContext) {
+            return
+          }
+          await $launchDarkly.setContext($launchDarkly.createUserContext(true))
+          recordPlpFlagEvaluations()
+        }
+      })
+        .catch(() => {
+          // Simulation errors shouldn't impact UI; mark as completed.
+        })
+        .finally(() => {
+          simulationInFlight.value = Math.max(0, simulationInFlight.value - 1)
+          simulationCompleted.value += 1
+        })
+    }, i * 40 + stagger)
+  }
+}
 
 const games = [
   {
