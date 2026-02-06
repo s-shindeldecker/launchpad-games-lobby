@@ -53,7 +53,7 @@
             </ul>
           </div>
           <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <h2 class="text-lg font-semibold text-white">Buy the Pack</h2>
+            <h2 class="text-lg font-semibold text-white">Buy the Party Game</h2>
             <p class="mt-2 text-sm text-slate-300">
               Available now from your favorite store.
             </p>
@@ -98,7 +98,7 @@ const route = useRoute()
 const detailedGames = {
   'talkin-ship': {
     name: "Talkin' Ship",
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     tagline:
       'A quick-paced, witty party game where every round demands a ship pun.',
     players: '3-8 players',
@@ -118,7 +118,7 @@ const detailedGames = {
   },
   'laugh-labyrinth': {
     name: 'Laugh Labyrinth',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     tagline: 'Co-op puzzle rooms for the most chaotic of friends.',
     players: '1-6 players',
     badges: ['Co-op', 'Puzzle', 'Timers'],
@@ -137,7 +137,7 @@ const detailedGames = {
   },
   'tag-it-toggle-it': {
     name: "Tag it & Toggle it",
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     tagline:
       'Create two or more versions of your graffiti art, then toggle into the funniest phrase.',
     players: '3-8 players',
@@ -157,7 +157,7 @@ const detailedGames = {
   },
   'tavern-games': {
     name: 'Tavern Games',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     tagline:
       'Can you beat the fantastical creatures at this tavern in games from their own magical world?',
     players: '2-8 players',
@@ -177,7 +177,7 @@ const detailedGames = {
   },
   'blastbeat-battle': {
     name: 'Blastbeat Battle',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     tagline: 'Rhythm duels and crowd-surfing mini-games.',
     players: '2-10 players',
     badges: ['Rhythm', 'Party', 'Fast'],
@@ -200,7 +200,7 @@ const game = computed(
   () =>
     detailedGames[route.params.slug as keyof typeof detailedGames] ?? {
       name: 'Coming Soon',
-      pack: 'Upcoming Pack',
+      pack: 'Upcoming Party Game',
       tagline: 'Details are still in orbit. Check back soon for the full reveal.',
       players: 'TBD',
       badges: ['TBD'],
@@ -208,7 +208,7 @@ const game = computed(
       image: '',
       highlights: [
         'This game is still incubating inside the Launchpad labs.',
-        'More details will appear as soon as the pack is announced.'
+        'More details will appear as soon as the party game is announced.'
       ],
       storeLinks: [{ label: 'View all games', url: '/games' }]
     }

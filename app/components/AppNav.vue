@@ -13,7 +13,7 @@
           <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-200">
             Launchpad Games
           </p>
-          <p class="text-xs text-slate-300">Party Pack Showcase</p>
+          <p class="text-xs text-slate-300">Party Game Studio</p>
         </div>
       </NuxtLink>
 
@@ -22,7 +22,6 @@
         <NuxtLink to="/games" class="text-slate-300 hover:text-white">
           Games
         </NuxtLink>
-        <a class="text-slate-300 hover:text-white" href="#">Packs</a>
         <a class="text-slate-300 hover:text-white" href="#">How to Play</a>
         <a class="text-slate-300 hover:text-white" href="#">Shop</a>
       </nav>

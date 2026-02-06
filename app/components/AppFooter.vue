@@ -6,7 +6,7 @@
       <div>
         <p class="text-white">Launchpad Games</p>
         <p class="text-xs text-slate-400">
-          Playful party packs for every screen and every crowd.
+          Playful party games for every screen and every crowd.
         </p>
       </div>
       <div class="flex flex-wrap gap-4 text-xs text-slate-400">

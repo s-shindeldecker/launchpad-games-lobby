@@ -18,12 +18,12 @@
             class="rounded-3xl border border-white/10 bg-slate-900/60 px-5 py-4 text-sm text-slate-200"
           >
             <p class="text-xs uppercase tracking-[0.3em] text-slate-400">
-              Featured Pack
+              Featured Party Game
             </p>
             <p class="mt-2 text-lg font-semibold text-white">
               Talkin' Ship
             </p>
-            <p class="mt-1 text-xs text-slate-400">Party Pack 10</p>
+            <p class="mt-1 text-xs text-slate-400">Party Game Highlight</p>
           </div>
         </div>
 
@@ -35,7 +35,7 @@
             Release Date
           </button>
           <span class="text-slate-500">|</span>
-          <span class="text-slate-400">Pack</span>
+          <span class="text-slate-400">Party Games</span>
           <button class="rounded-full border border-white/10 px-3 py-1">
             Any
           </button>
@@ -73,9 +73,9 @@ import GameCard from '~/components/GameCard.vue'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 
 const { getFlagValue, isReady } = useLaunchDarkly()
-const plpTitle = ref('Games in the Packs')
+const plpTitle = ref('Party Games Catalog')
 const plpSubtitle = ref(
-  'Browse the individual games featured across Launchpad party packs. Each pack includes a set of games, and the packs are what you can purchase.'
+  'Browse the individual party games available in the Launchpad lineup.'
 )
 const plpLargeImages = ref(false)
 const plpColumns = ref(3)
@@ -105,7 +105,7 @@ const games = [
     name: "Talkin' Ship",
     tagline:
       'Race to drop the cleverest ship-related pun for every wild situation.',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     players: '3-8 players',
     badges: ['Wordplay', 'Fast', 'Witty'],
     platforms: ['Steam', 'Switch', 'PS5', 'Xbox'],
@@ -117,7 +117,7 @@ const games = [
     name: 'Tavern Games',
     tagline:
       'Can you beat the fantastical creatures at this tavern in games from their own magical world?',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     players: '2-8 players',
     badges: ['Fantasy', 'Challenge', 'Party'],
     platforms: ['Steam', 'Switch', 'Web'],
@@ -129,7 +129,7 @@ const games = [
     name: "Tag it & Toggle it",
     tagline:
       'Make two versions of your graffiti art and toggle them into wild phrases.',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     players: '3-8 players',
     badges: ['Creative', 'Mashup', 'Party'],
     platforms: ['Steam', 'Switch', 'Web'],
@@ -140,7 +140,7 @@ const games = [
     slug: 'laugh-labyrinth',
     name: 'Laugh Labyrinth',
     tagline: 'Co-op puzzle rooms for the most chaotic of friends.',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     players: '1-6 players',
     badges: ['Co-op', 'Puzzle', 'Timers'],
     platforms: ['Steam', 'Switch', 'Web'],
@@ -152,7 +152,7 @@ const games = [
     slug: 'blastbeat-battle',
     name: 'Blastbeat Battle',
     tagline: 'Rhythm duels and crowd-surfing mini-games.',
-    pack: 'Party Pack 10',
+    pack: 'Party Game Collection',
     players: '2-10 players',
     badges: ['Rhythm', 'Party', 'Fast'],
     platforms: ['Steam', 'PS5', 'Xbox'],
@@ -164,7 +164,7 @@ const games = [
     slug: 'neon-quizline',
     name: 'Neon Quizline',
     tagline: 'Retro game-show trivia with laser-bright stakes.',
-    pack: 'Party Pack 9',
+    pack: 'Party Game Collection',
     players: '2-8 players',
     badges: ['Trivia', 'Audience', 'Retro'],
     platforms: ['Steam', 'Switch'],
@@ -176,7 +176,7 @@ const games = [
     slug: 'spacetop-scribbles',
     name: 'Spacetop Scribbles',
     tagline: 'Draw the impossible, watch the chaos unfold.',
-    pack: 'Party Pack 9',
+    pack: 'Party Game Collection',
     players: '3-8 players',
     badges: ['Drawing', 'Comedy', 'Creative'],
     platforms: ['Steam', 'Web'],
@@ -187,7 +187,7 @@ const games = [
     slug: 'mystic-mashup',
     name: 'Mystic Mashup',
     tagline: 'Match wild prompts before the timer snaps.',
-    pack: 'Party Pack 8',
+    pack: 'Party Game Collection',
     players: '2-8 players',
     badges: ['Wordplay', 'Fast', 'Wildcard'],
     platforms: ['Steam', 'Switch', 'PS5'],
