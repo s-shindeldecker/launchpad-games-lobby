@@ -58,6 +58,7 @@
       <NuxtLink
         v-if="game.detailed"
         :to="`/games/${game.slug}`"
+        @click="handleProductEngaged"
         class="inline-flex w-full items-center justify-center rounded-full bg-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
       >
         View Details
@@ -75,6 +76,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { trackEvent } from '~/utils/analytics'
 
 const props = defineProps<{
   game: {
@@ -95,4 +97,9 @@ const props = defineProps<{
 
 const imageSize = computed(() => props.game.imageSize ?? 'default')
 const chipSize = computed(() => props.game.chipSize ?? 'default')
+
+const handleProductEngaged = () => {
+  // Primary metric: capture intentional engagement from the PLP.
+  trackEvent('product_engaged', { product_id: props.game.slug })
+}
 </script>

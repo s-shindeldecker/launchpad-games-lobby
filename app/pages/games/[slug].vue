@@ -90,10 +90,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { trackEvent } from '~/utils/analytics'
 
 const route = useRoute()
+const lastTrackedSlug = ref<string | null>(null)
+
+watch(
+  () => route.params.slug,
+  (slug) => {
+    const productId = Array.isArray(slug) ? slug[0] : slug
+    if (!productId || productId === lastTrackedSlug.value) return
+    lastTrackedSlug.value = productId
+    // Exposure denominator for PDP experiments.
+    trackEvent('pdp_view', { product_id: productId })
+  },
+  { immediate: true }
+)
 
 const detailedGames = {
   'talkin-ship': {
@@ -213,4 +227,31 @@ const game = computed(
       storeLinks: [{ label: 'View all games', url: '/games' }]
     }
 )
+
+// TODO: Call when an Add to Cart button exists on the PDP.
+const trackAddToCart = (purchaseType: 'direct' | 'console') => {
+  const productId = Array.isArray(route.params.slug)
+    ? route.params.slug[0]
+    : (route.params.slug as string)
+  if (!productId) return
+  trackEvent('add_to_cart', { product_id: productId, purchase_type: purchaseType })
+}
+
+// TODO: Call when cart -> checkout transition exists.
+const trackCheckoutStart = (cartValue: number) => {
+  trackEvent('checkout_start', { cart_value: cartValue })
+}
+
+// TODO: Call after simulated checkout completion page is built.
+const trackPurchaseComplete = (
+  orderId: string,
+  cartValue: number,
+  purchaseType: 'direct' | 'console'
+) => {
+  trackEvent('purchase_complete', {
+    order_id: orderId,
+    cart_value: cartValue,
+    purchase_type: purchaseType
+  })
+}
 </script>

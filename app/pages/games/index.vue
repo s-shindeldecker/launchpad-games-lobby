@@ -68,9 +68,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { onMounted, ref, watchEffect } from 'vue'
 import GameCard from '~/components/GameCard.vue'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
+import { trackEvent } from '~/utils/analytics'
 
 const { getFlagValue, isReady } = useLaunchDarkly()
 const plpTitle = ref('Party Games Catalog')
@@ -87,6 +88,11 @@ const plpGridClassMap: Record<number, string> = {
 }
 
 const clampColumns = (value: number) => Math.min(5, Math.max(2, value))
+
+onMounted(() => {
+  // Exposure denominator for PLP experiments.
+  trackEvent('plp_view', { page: 'games' })
+})
 
 watchEffect(() => {
   if (!isReady.value) return
