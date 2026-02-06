@@ -57,6 +57,74 @@
           />
         </div>
 
+        <div
+          v-if="showAiJudge"
+          class="mt-8 rounded-3xl border border-white/10 bg-slate-900/50 p-6"
+        >
+          <p class="text-xs uppercase tracking-[0.3em] text-fuchsia-200">
+            Talkin’ Ship (AI Judge Edition)
+          </p>
+          <h2 class="mt-3 text-lg font-semibold text-white">
+            Try a ship‑pun challenge
+          </h2>
+          <p class="mt-2 text-sm text-slate-200/90">
+            Get a prompt, drop your best ship‑related pun, and let the AI judge
+            score it.
+          </p>
+
+          <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p class="text-xs text-slate-400">Prompt</p>
+            <p v-if="prompt" class="mt-2 text-sm text-white">
+              {{ prompt }}
+            </p>
+            <p v-else class="mt-2 text-sm text-slate-400">
+              Click “Start Round” to get a prompt.
+            </p>
+          </div>
+
+          <div class="mt-4">
+            <textarea
+              v-model="response"
+              rows="3"
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-fuchsia-400/60 focus:outline-none"
+              :placeholder="prompt ? 'Your ship pun goes here…' : 'Get a prompt first'"
+              :disabled="!prompt || isBusy"
+            ></textarea>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button
+              class="rounded-full border border-fuchsia-400/40 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isBusy"
+              @click="startRound"
+            >
+              {{ prompt ? 'New Prompt' : 'Start Round' }}
+            </button>
+            <button
+              class="rounded-full bg-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!prompt || !response.trim() || isBusy"
+              @click="submitResponse"
+            >
+              Submit Response
+            </button>
+          </div>
+
+          <p v-if="errorMessage" class="mt-3 text-xs text-rose-300">
+            {{ errorMessage }}
+          </p>
+
+          <div
+            v-if="result"
+            class="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+          >
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Score</span>
+              <span>{{ result.score }} · {{ result.label.toUpperCase() }}</span>
+            </div>
+            <p class="mt-2 text-sm text-white">{{ result.verdict }}</p>
+          </div>
+        </div>
+
         <div class="mt-8 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
           <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
             <h2 class="text-lg font-semibold text-white">What to Expect</h2>
@@ -115,10 +183,53 @@ import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 import { useCart } from '~/composables/useCart'
 
 const route = useRoute()
+const { $launchDarkly } = useNuxtApp()
 const lastTrackedSlug = ref<string | null>(null)
 const { getFlagValue, isReady } = useLaunchDarkly()
 const pdpLargeImages = ref(false)
 const { addItem, openDrawer } = useCart()
+const aiJudgeEnabled = ref(true)
+const promptTone = ref('playful')
+const prompt = ref('')
+const response = ref('')
+const result = ref<null | { score: number; label: string; verdict: string }>(
+  null
+)
+const isBusy = ref(false)
+const errorMessage = ref('')
+
+const isTalkinShip = computed(
+  () => route.params.slug === 'talkin-ship'
+)
+const showAiJudge = computed(() => aiJudgeEnabled.value && isTalkinShip.value)
+
+const fallbackPrompts = [
+  'A pirate is interviewing for a corporate job. What’s their ship‑pun answer to “Where do you see yourself in 5 years?”',
+  'A cruise ship has to give a pep talk before the big race. What’s the ship‑pun opener?',
+  'A lighthouse starts a podcast. What’s the ship‑pun title of episode one?'
+]
+
+const fallbackJudge = {
+  score: 50,
+  label: 'ok',
+  verdict: 'Not bad—try another!'
+}
+
+const buildContextPayload = () => {
+  const context = $launchDarkly?.context?.value
+  if (!context) return undefined
+  return {
+    key: context.key,
+    anonymous: context.anonymous,
+    name: context.name,
+    state: context.state,
+    owned_platforms: context.owned_platforms,
+    region: context.region,
+    plan: context.plan,
+    device: context.device,
+    platform: context.platform
+  }
+}
 
 watch(
   () => route.params.slug,
@@ -135,6 +246,8 @@ watch(
 watchEffect(() => {
   if (!isReady.value) return
   pdpLargeImages.value = getFlagValue('plp-large-images', pdpLargeImages.value)
+  aiJudgeEnabled.value = getFlagValue('ai-judge-enabled', true)
+  promptTone.value = getFlagValue('ai-prompt-variant', 'playful')
 })
 
 const detailedGames = {
@@ -264,5 +377,77 @@ const handleAddToCart = () => {
   addItem({ id: productId, name: game.value.name })
   openDrawer()
   trackEvent('add_to_cart', { product_id: productId, purchase_type: 'direct' })
+}
+
+const normalizePrompt = (value: unknown) => {
+  if (typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'prompt' in value) {
+    const promptValue = (value as { prompt?: unknown }).prompt
+    if (typeof promptValue === 'string') return promptValue
+  }
+  return ''
+}
+
+const normalizeJudge = (value: unknown) => {
+  if (!value || typeof value !== 'object') return fallbackJudge
+  const payload = value as {
+    score?: unknown
+    label?: unknown
+    verdict?: unknown
+  }
+  const score =
+    typeof payload.score === 'number' ? Math.round(payload.score) : fallbackJudge.score
+  const label =
+    typeof payload.label === 'string' ? payload.label : fallbackJudge.label
+  const verdict =
+    typeof payload.verdict === 'string' ? payload.verdict : fallbackJudge.verdict
+  return { score, label, verdict }
+}
+
+const startRound = async () => {
+  errorMessage.value = ''
+  result.value = null
+  response.value = ''
+  isBusy.value = true
+  try {
+    const output = await $fetch('/api/ai-config', {
+      method: 'POST',
+      body: {
+        type: 'prompt',
+        input: { tone: promptTone.value, length: 'short' },
+        context: buildContextPayload()
+      }
+    })
+    const nextPrompt = normalizePrompt(output)
+    prompt.value =
+      nextPrompt || fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)]
+  } catch {
+    prompt.value = fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)]
+    errorMessage.value = 'Prompt generator unavailable. Using a fallback prompt.'
+  } finally {
+    isBusy.value = false
+  }
+}
+
+const submitResponse = async () => {
+  if (!prompt.value || !response.value.trim()) return
+  errorMessage.value = ''
+  isBusy.value = true
+  try {
+    const output = await $fetch('/api/ai-config', {
+      method: 'POST',
+      body: {
+        type: 'judge',
+        input: { prompt: prompt.value, response: response.value.trim() },
+        context: buildContextPayload()
+      }
+    })
+    result.value = normalizeJudge(output)
+  } catch {
+    result.value = fallbackJudge
+    errorMessage.value = 'Judge unavailable. Showing a fallback verdict.'
+  } finally {
+    isBusy.value = false
+  }
 }
 </script>

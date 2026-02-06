@@ -10,8 +10,11 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@launchdarkly/node-server-sdk": "^9.10.6",
+    "@launchdarkly/server-sdk-ai": "^0.16.1",
     "launchdarkly-js-client-sdk": "^3.9.0",
     "nuxt": "^4.3.0",
+    "openai": "^6.18.0",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4"
   },
