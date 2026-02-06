@@ -23,8 +23,82 @@ const getUserKey = () => {
   return createUserKey()
 }
 
+const US_STATES = [
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY'
+]
+
+const OWNED_PLATFORMS = ['Switch', 'Playstation', 'Xbox', 'PC']
+
+const pickRandom = <T>(values: T[]) =>
+  values[Math.floor(Math.random() * values.length)]
+
+const pickUnique = <T>(values: T[], count: number) => {
+  const pool = [...values]
+  const selected: T[] = []
+  const max = Math.min(count, pool.length)
+  for (let i = 0; i < max; i += 1) {
+    const index = Math.floor(Math.random() * pool.length)
+    selected.push(pool.splice(index, 1)[0])
+  }
+  return selected
+}
+
 const buildUserContext = (forceNew = false) => {
   const key = forceNew ? createUserKey() : getUserKey()
+  const state = pickRandom(US_STATES)
+  const ownedPlatforms = pickUnique(
+    OWNED_PLATFORMS,
+    Math.floor(Math.random() * 3) + 1
+  )
   return {
     kind: 'user',
     key,
@@ -33,6 +107,8 @@ const buildUserContext = (forceNew = false) => {
     email: `demo.user+${key.slice(-6)}@launchpad.games`,
     plan: 'party',
     region: 'NA',
+    state,
+    owned_platforms: ownedPlatforms,
     device: 'mobile',
     platform: 'web'
   }
