@@ -12,6 +12,7 @@
         <AppFooter />
       </div>
     </div>
+    <CartDrawer />
   </div>
 </template>
 
@@ -19,4 +20,5 @@
 import AppFooter from '~/components/AppFooter.vue'
 import AppNav from '~/components/AppNav.vue'
 import AppTopBar from '~/components/AppTopBar.vue'
+import CartDrawer from '~/components/CartDrawer.vue'
 </script>

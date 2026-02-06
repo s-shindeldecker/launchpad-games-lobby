@@ -23,7 +23,6 @@
           Games
         </NuxtLink>
         <a class="text-slate-300 hover:text-white" href="#">How to Play</a>
-        <a class="text-slate-300 hover:text-white" href="#">Shop</a>
       </nav>
     </div>
   </aside>

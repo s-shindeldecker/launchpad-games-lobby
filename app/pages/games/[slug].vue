@@ -69,6 +69,12 @@
             <p class="mt-2 text-sm text-slate-300">
               Available now from your favorite store.
             </p>
+            <button
+              class="mt-4 w-full rounded-full border border-fuchsia-400/40 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+              @click="handleAddToCart"
+            >
+              Add to Cart
+            </button>
             <div class="mt-4 flex flex-col gap-3">
               <a
                 v-for="link in game.storeLinks"
@@ -106,11 +112,13 @@ import { computed, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { trackEvent } from '~/utils/analytics'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
+import { useCart } from '~/composables/useCart'
 
 const route = useRoute()
 const lastTrackedSlug = ref<string | null>(null)
 const { getFlagValue, isReady } = useLaunchDarkly()
 const pdpLargeImages = ref(false)
+const { addItem, openDrawer } = useCart()
 
 watch(
   () => route.params.slug,
@@ -248,30 +256,13 @@ const game = computed(
     }
 )
 
-// TODO: Call when an Add to Cart button exists on the PDP.
-const trackAddToCart = (purchaseType: 'direct' | 'console') => {
+const handleAddToCart = () => {
   const productId = Array.isArray(route.params.slug)
     ? route.params.slug[0]
     : (route.params.slug as string)
   if (!productId) return
-  trackEvent('add_to_cart', { product_id: productId, purchase_type: purchaseType })
-}
-
-// TODO: Call when cart -> checkout transition exists.
-const trackCheckoutStart = (cartValue: number) => {
-  trackEvent('checkout_start', { cart_value: cartValue })
-}
-
-// TODO: Call after simulated checkout completion page is built.
-const trackPurchaseComplete = (
-  orderId: string,
-  cartValue: number,
-  purchaseType: 'direct' | 'console'
-) => {
-  trackEvent('purchase_complete', {
-    order_id: orderId,
-    cart_value: cartValue,
-    purchase_type: purchaseType
-  })
+  addItem({ id: productId, name: game.value.name })
+  openDrawer()
+  trackEvent('add_to_cart', { product_id: productId, purchase_type: 'direct' })
 }
 </script>

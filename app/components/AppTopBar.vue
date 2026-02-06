@@ -11,20 +11,50 @@
         <span class="text-slate-500">·</span>
         <span>Platforms: {{ userPlatforms }}</span>
       </div>
-      <button
-        class="rounded-full border border-fuchsia-400/40 px-3 py-1 text-xs text-fuchsia-100 transition hover:bg-fuchsia-500/20"
-        @click="rotateUser"
-      >
-        New Demo User
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          class="relative inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:text-white"
+          @click="openDrawer"
+        >
+          <span class="sr-only">Open cart</span>
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6L23 6H6"></path>
+          </svg>
+          <span>Cart</span>
+          <span
+            class="ml-1 rounded-full bg-fuchsia-500 px-2 py-0.5 text-[10px] text-white"
+          >
+            {{ totalItems }}
+          </span>
+        </button>
+        <button
+          class="rounded-full border border-fuchsia-400/40 px-3 py-1 text-xs text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+          @click="rotateUser"
+        >
+          New Demo User
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useCart } from '~/composables/useCart'
 
 const { $launchDarkly } = useNuxtApp()
+const { openDrawer, totalItems, clearCart } = useCart()
 
 const userLabel = computed(() => {
   const context = $launchDarkly?.context?.value
@@ -49,6 +79,7 @@ const userPlatforms = computed(() => {
 
 const rotateUser = async () => {
   if (!$launchDarkly?.setContext || !$launchDarkly?.createUserContext) return
+  clearCart()
   await $launchDarkly.setContext($launchDarkly.createUserContext(true))
 }
 </script>
