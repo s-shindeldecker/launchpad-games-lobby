@@ -70,7 +70,7 @@
               Available now from your favorite store.
             </p>
             <button
-              class="mt-4 w-full rounded-full border border-fuchsia-400/40 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+              class="mt-4 w-full rounded-full bg-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
               @click="handleAddToCart"
             >
               Add to Cart
@@ -82,7 +82,7 @@
                 :href="link.url"
                 target="_blank"
                 rel="noreferrer"
-                class="rounded-full bg-fuchsia-500 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+                class="rounded-full border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
               >
                 {{ link.label }}
               </a>
