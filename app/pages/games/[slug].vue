@@ -50,7 +50,10 @@
           <img
             :src="game.image"
             :alt="game.name"
-            class="h-auto w-full object-contain"
+            :class="[
+              'h-auto w-full object-contain',
+              pdpLargeImages ? 'max-h-[520px]' : 'max-h-[360px]'
+            ]"
           />
         </div>
 
@@ -99,12 +102,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { trackEvent } from '~/utils/analytics'
+import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 
 const route = useRoute()
 const lastTrackedSlug = ref<string | null>(null)
+const { getFlagValue, isReady } = useLaunchDarkly()
+const pdpLargeImages = ref(false)
 
 watch(
   () => route.params.slug,
@@ -117,6 +123,11 @@ watch(
   },
   { immediate: true }
 )
+
+watchEffect(() => {
+  if (!isReady.value) return
+  pdpLargeImages.value = getFlagValue('plp-large-images', pdpLargeImages.value)
+})
 
 const detailedGames = {
   'talkin-ship': {
