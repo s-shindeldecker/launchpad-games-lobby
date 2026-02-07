@@ -137,6 +137,7 @@ export default defineEventHandler(async (event) => {
   try {
     await ensureClients()
     if (!aiClient || !openaiClient) {
+      console.error('[AI Config] Clients unavailable')
       return { error: 'config_unavailable' }
     }
 
@@ -146,6 +147,11 @@ export default defineEventHandler(async (event) => {
       process.env.LD_AI_CONFIG_JUDGE_KEY ?? 'talkin-ship-judge'
     const configKey = type === 'prompt' ? promptKey : judgeKey
     const ctx = buildContext(body.context)
+    console.info('[AI Config] Request received', {
+      type,
+      configKey,
+      contextKey: ctx.key
+    })
 
     const aiConfig = await aiClient.completionConfig(
       configKey,
@@ -155,10 +161,12 @@ export default defineEventHandler(async (event) => {
     )
 
     if (!aiConfig.enabled) {
+      console.warn('[AI Config] Config disabled', { configKey })
       return { error: 'config_disabled' }
     }
 
     if (!aiConfig.model?.name) {
+      console.error('[AI Config] Model unavailable', { configKey })
       return { error: 'model_unavailable' }
     }
 
@@ -185,8 +193,13 @@ export default defineEventHandler(async (event) => {
 
     const content = completion.choices?.[0]?.message?.content?.trim()
     if (!content) {
+      console.error('[AI Config] Empty model response', { configKey })
       return { error: type === 'prompt' ? 'invalid_prompt' : 'invalid_judge' }
     }
+    console.info('[AI Config] Model response received', {
+      configKey,
+      responsePreview: content.slice(0, 200)
+    })
 
     if (type === 'prompt') {
       return { prompt: content }
@@ -200,6 +213,10 @@ export default defineEventHandler(async (event) => {
       return { verdict: content }
     }
   } catch (error) {
+    console.error('[AI Config] Execution failed', {
+      type,
+      message: error instanceof Error ? error.message : String(error)
+    })
     return { error: 'config_error' }
   }
 })
