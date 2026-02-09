@@ -101,6 +101,7 @@ const extractJudge = (payload: unknown) => {
     score?: unknown
     label?: unknown
     verdict?: unknown
+    comment?: unknown
     output?: unknown
     result?: unknown
   }
@@ -112,7 +113,8 @@ const extractJudge = (payload: unknown) => {
     return {
       score: value.score,
       label: value.label,
-      verdict: value.verdict
+      verdict: value.verdict,
+      comment: value.comment
     }
   }
   const nested = value.output ?? value.result
@@ -121,11 +123,13 @@ const extractJudge = (payload: unknown) => {
       score?: unknown
       label?: unknown
       verdict?: unknown
+      comment?: unknown
     }
     return {
       score: nestedValue.score,
       label: nestedValue.label,
-      verdict: nestedValue.verdict
+      verdict: nestedValue.verdict,
+      comment: nestedValue.comment
     }
   }
   return null
