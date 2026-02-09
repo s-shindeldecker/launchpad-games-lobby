@@ -122,6 +122,9 @@
               <span>{{ result.score }} · {{ result.label.toUpperCase() }}</span>
             </div>
             <p class="mt-2 text-sm text-white">{{ result.verdict }}</p>
+            <p v-if="result.comment" class="mt-2 text-xs text-slate-300">
+              {{ result.comment }}
+            </p>
           </div>
         </div>
 
@@ -192,9 +195,10 @@ const aiJudgeEnabled = ref(true)
 const promptTone = ref('playful')
 const prompt = ref('')
 const response = ref('')
-const result = ref<null | { score: number; label: string; verdict: string }>(
-  null
-)
+const result = ref<
+  | null
+  | { score: number; label: string; verdict: string; comment?: string }
+>(null)
 const isBusy = ref(false)
 const errorMessage = ref('')
 
@@ -212,7 +216,8 @@ const fallbackPrompts = [
 const fallbackJudge = {
   score: 50,
   label: 'ok',
-  verdict: 'Not bad—try another!'
+  verdict: 'Not bad—try another!',
+  comment: 'Short, sharp, and seaworthy. Keep it up.'
 }
 
 const buildContextPayload = () => {
@@ -394,6 +399,7 @@ const normalizeJudge = (value: unknown) => {
     score?: unknown
     label?: unknown
     verdict?: unknown
+    comment?: unknown
   }
   const score =
     typeof payload.score === 'number' ? Math.round(payload.score) : fallbackJudge.score
@@ -401,7 +407,9 @@ const normalizeJudge = (value: unknown) => {
     typeof payload.label === 'string' ? payload.label : fallbackJudge.label
   const verdict =
     typeof payload.verdict === 'string' ? payload.verdict : fallbackJudge.verdict
-  return { score, label, verdict }
+  const comment =
+    typeof payload.comment === 'string' ? payload.comment : undefined
+  return { score, label, verdict, comment }
 }
 
 const startRound = async () => {
