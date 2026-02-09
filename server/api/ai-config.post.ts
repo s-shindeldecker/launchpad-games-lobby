@@ -1,6 +1,6 @@
+import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime'
 import { init, type LDClient } from '@launchdarkly/node-server-sdk'
 import { initAi, type LDAIClient } from '@launchdarkly/server-sdk-ai'
-import OpenAI from 'openai'
 
 type AiConfigInput = {
   type: 'prompt' | 'judge'
@@ -23,7 +23,7 @@ type AiContext = {
 
 let ldClient: LDClient | null = null
 let aiClient: LDAIClient | null = null
-let openaiClient: OpenAI | null = null
+let bedrockClient: BedrockRuntimeClient | null = null
 let initPromise: Promise<void> | null = null
 
 const ensureClients = async () => {
@@ -36,10 +36,14 @@ const ensureClients = async () => {
     if (!sdkKey) {
       throw new Error('missing_launchdarkly_sdk_key')
     }
+    const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+    if (!region) {
+      throw new Error('missing_aws_region')
+    }
     ldClient = init(sdkKey)
     await ldClient.waitForInitialization()
     aiClient = initAi(ldClient)
-    openaiClient = new OpenAI()
+    bedrockClient = new BedrockRuntimeClient({ region })
   })()
   await initPromise
 }
@@ -127,6 +131,47 @@ const extractJudge = (payload: unknown) => {
   return null
 }
 
+type BedrockMessage = {
+  role: 'user' | 'assistant'
+  content: { text: string }[]
+}
+
+const toBedrockMessages = (messages: { role: string; content: string }[]) => {
+  const system: { text: string }[] = []
+  const bedrockMessages: BedrockMessage[] = []
+
+  for (const message of messages) {
+    if (message.role === 'system') {
+      system.push({ text: message.content })
+      continue
+    }
+    if (message.role === 'assistant' || message.role === 'user') {
+      bedrockMessages.push({
+        role: message.role,
+        content: [{ text: message.content }]
+      })
+    }
+  }
+
+  return {
+    system: system.length ? system : undefined,
+    messages: bedrockMessages
+  }
+}
+
+const trackBedrockMetrics = async <T>(
+  aiConfig: {
+    tracker?: { trackBedrockMetrics?: (fn: () => Promise<T>) => Promise<T> }
+  },
+  fn: () => Promise<T>
+) => {
+  const tracker = aiConfig.tracker
+  if (tracker?.trackBedrockMetrics) {
+    return tracker.trackBedrockMetrics(fn)
+  }
+  return fn()
+}
+
 export default defineEventHandler(async (event) => {
   const body = (await readBody(event)) as AiConfigInput
   const type = body?.type
@@ -136,7 +181,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     await ensureClients()
-    if (!aiClient || !openaiClient) {
+    if (!aiClient || !bedrockClient) {
       console.error('[AI Config] Clients unavailable')
       return { error: 'config_unavailable' }
     }
@@ -184,14 +229,19 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const completion = await aiConfig.tracker.trackOpenAIMetrics(() =>
-      openaiClient!.chat.completions.create({
-        model: aiConfig.model!.name,
-        messages
-      })
+    const { system, messages: bedrockMessages } = toBedrockMessages(messages)
+
+    const completion = await trackBedrockMetrics(aiConfig, () =>
+      bedrockClient!.send(
+        new ConverseCommand({
+          modelId: aiConfig.model!.name,
+          messages: bedrockMessages,
+          system
+        })
+      )
     )
 
-    const content = completion.choices?.[0]?.message?.content?.trim()
+    const content = completion.output?.message?.content?.[0]?.text?.trim()
     if (!content) {
       console.error('[AI Config] Empty model response', { configKey })
       return { error: type === 'prompt' ? 'invalid_prompt' : 'invalid_judge' }
