@@ -244,6 +244,9 @@ export default defineEventHandler(async (event) => {
         })
       )
     )
+    if (ldClient) {
+      await ldClient.flush()
+    }
 
     const content = completion.output?.message?.content?.[0]?.text?.trim()
     if (!content) {
