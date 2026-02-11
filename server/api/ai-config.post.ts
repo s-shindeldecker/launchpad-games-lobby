@@ -229,6 +229,13 @@ export default defineEventHandler(async (event) => {
       return { error: 'model_unavailable' }
     }
 
+    console.info('[AI Config] Config details', {
+      configKey,
+      modelName: aiConfig.model?.name,
+      hasMessages: Boolean(aiConfig.messages?.length),
+      trackerKeys: aiConfig.tracker ? Object.keys(aiConfig.tracker) : []
+    })
+
     const messages = aiConfig.messages ? [...aiConfig.messages] : []
     if (!messages.length && type === 'judge') {
       const promptValue =
