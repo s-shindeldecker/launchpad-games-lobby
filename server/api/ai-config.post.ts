@@ -1,6 +1,6 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime'
 import { init, type LDClient } from '@launchdarkly/node-server-sdk'
-import { initAi, type LDAIClient } from '@launchdarkly/server-sdk-ai'
+import { initAi, type LDAIClient, type LDAIMetrics } from '@launchdarkly/server-sdk-ai'
 
 type AiConfigInput = {
   type: 'prompt' | 'judge'
@@ -173,18 +173,16 @@ const toBedrockMessages = (messages: { role: string; content: string }[]) => {
   }
 }
 
-const trackBedrockMetrics = async <T>(
-  aiConfig: {
-    tracker?: { trackBedrockMetrics?: (fn: () => Promise<T>) => Promise<T> }
-  },
-  fn: () => Promise<T>
-) => {
-  const tracker = aiConfig.tracker
-  if (tracker?.trackBedrockMetrics) {
-    return tracker.trackBedrockMetrics(fn)
+const mapBedrockMetrics = (response: {
+  usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number }
+}): LDAIMetrics => ({
+  success: true,
+  usage: {
+    input: response.usage?.inputTokens ?? 0,
+    output: response.usage?.outputTokens ?? 0,
+    total: response.usage?.totalTokens ?? 0
   }
-  return fn()
-}
+})
 
 export default defineEventHandler(async (event) => {
   const body = (await readBody(event)) as AiConfigInput
@@ -252,11 +250,11 @@ export default defineEventHandler(async (event) => {
 
     const { system, messages: bedrockMessages } = toBedrockMessages(messages)
 
-    console.info('[AI Config] Bedrock tracker available', {
-      available: Boolean(aiConfig.tracker?.trackBedrockMetrics)
+    console.info('[AI Config] Metrics tracker available', {
+      available: Boolean(aiConfig.tracker?.trackMetricsOf)
     })
 
-    const completion = await trackBedrockMetrics(aiConfig, () =>
+    const invokeModel = () =>
       bedrockClient!.send(
         new ConverseCommand({
           modelId: aiConfig.model!.name,
@@ -264,7 +262,10 @@ export default defineEventHandler(async (event) => {
           system
         })
       )
-    )
+
+    const completion = aiConfig.tracker?.trackMetricsOf
+      ? await aiConfig.tracker.trackMetricsOf(mapBedrockMetrics, invokeModel)
+      : await invokeModel()
     if (ldClient) {
       try {
         await ldClient.flush()
