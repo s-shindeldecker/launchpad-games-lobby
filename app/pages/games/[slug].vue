@@ -125,6 +125,17 @@
             <p v-if="result.comment" class="mt-2 text-xs text-slate-300">
               {{ result.comment }}
             </p>
+            <div
+              v-if="result.meta"
+              class="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500"
+            >
+              <span v-if="result.meta.stopReason">
+                Stop: {{ result.meta.stopReason }}
+              </span>
+              <span v-if="result.meta.usage">
+                Tokens: {{ formatUsage(result.meta.usage) }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -197,7 +208,16 @@ const prompt = ref('')
 const response = ref('')
 const result = ref<
   | null
-  | { score: number; label: string; verdict: string; comment?: string }
+  | {
+      score: number
+      label: string
+      verdict: string
+      comment?: string
+      meta?: {
+        stopReason?: string
+        usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number }
+      }
+    }
 >(null)
 const isBusy = ref(false)
 const errorMessage = ref('')
@@ -400,6 +420,7 @@ const normalizeJudge = (value: unknown) => {
     label?: unknown
     verdict?: unknown
     comment?: unknown
+    meta?: unknown
   }
   const score =
     typeof payload.score === 'number' ? Math.round(payload.score) : fallbackJudge.score
@@ -409,7 +430,46 @@ const normalizeJudge = (value: unknown) => {
     typeof payload.verdict === 'string' ? payload.verdict : fallbackJudge.verdict
   const comment =
     typeof payload.comment === 'string' ? payload.comment : undefined
-  return { score, label, verdict, comment }
+  const meta = payload.meta as
+    | {
+        stopReason?: unknown
+        usage?: unknown
+      }
+    | undefined
+  const metaNormalized =
+    meta && typeof meta === 'object'
+      ? {
+          stopReason:
+            typeof meta.stopReason === 'string' ? meta.stopReason : undefined,
+          usage:
+            meta.usage && typeof meta.usage === 'object'
+              ? (meta.usage as {
+                  inputTokens?: number
+                  outputTokens?: number
+                  totalTokens?: number
+                })
+              : undefined
+        }
+      : undefined
+  return { score, label, verdict, comment, meta: metaNormalized }
+}
+
+const formatUsage = (usage: {
+  inputTokens?: number
+  outputTokens?: number
+  totalTokens?: number
+}) => {
+  const parts: string[] = []
+  if (typeof usage.inputTokens === 'number') {
+    parts.push(`in ${usage.inputTokens}`)
+  }
+  if (typeof usage.outputTokens === 'number') {
+    parts.push(`out ${usage.outputTokens}`)
+  }
+  if (typeof usage.totalTokens === 'number') {
+    parts.push(`total ${usage.totalTokens}`)
+  }
+  return parts.join(' · ')
 }
 
 const startRound = async () => {

@@ -287,16 +287,21 @@ export default defineEventHandler(async (event) => {
       responsePreview: content.slice(0, 200)
     })
 
+    const meta = {
+      stopReason: completion.stopReason,
+      usage: completion.usage
+    }
+
     if (type === 'prompt') {
-      return { prompt: content }
+      return { prompt: content, meta }
     }
 
     try {
       const parsed = JSON.parse(stripJsonCodeFence(content))
       const judge = extractJudge(parsed)
-      return judge ?? { verdict: content }
+      return judge ? { ...judge, meta } : { verdict: content, meta }
     } catch {
-      return { verdict: content }
+      return { verdict: content, meta }
     }
   } catch (error) {
     console.error('[AI Config] Execution failed', {
