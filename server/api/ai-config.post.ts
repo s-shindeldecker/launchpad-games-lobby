@@ -135,6 +135,16 @@ const extractJudge = (payload: unknown) => {
   return null
 }
 
+const stripJsonCodeFence = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('```')) return trimmed
+  const lines = trimmed.split('\n')
+  const startIndex = lines[0].startsWith('```') ? 1 : 0
+  const endIndex =
+    lines[lines.length - 1].startsWith('```') ? lines.length - 1 : lines.length
+  return lines.slice(startIndex, endIndex).join('\n').trim()
+}
+
 type BedrockMessage = {
   role: 'user' | 'assistant'
   content: { text: string }[]
@@ -263,7 +273,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      const parsed = JSON.parse(content)
+      const parsed = JSON.parse(stripJsonCodeFence(content))
       const judge = extractJudge(parsed)
       return judge ?? { verdict: content }
     } catch {
