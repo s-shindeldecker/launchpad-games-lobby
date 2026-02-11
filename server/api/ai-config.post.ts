@@ -245,6 +245,10 @@ export default defineEventHandler(async (event) => {
 
     const { system, messages: bedrockMessages } = toBedrockMessages(messages)
 
+    console.info('[AI Config] Bedrock tracker available', {
+      available: Boolean(aiConfig.tracker?.trackBedrockMetrics)
+    })
+
     const completion = await trackBedrockMetrics(aiConfig, () =>
       bedrockClient!.send(
         new ConverseCommand({
@@ -255,7 +259,15 @@ export default defineEventHandler(async (event) => {
       )
     )
     if (ldClient) {
-      await ldClient.flush()
+      try {
+        await ldClient.flush()
+        console.info('[AI Config] LaunchDarkly flush complete')
+      } catch (flushError) {
+        console.error('[AI Config] LaunchDarkly flush failed', {
+          message:
+            flushError instanceof Error ? flushError.message : String(flushError)
+        })
+      }
     }
 
     const content = completion.output?.message?.content?.[0]?.text?.trim()
