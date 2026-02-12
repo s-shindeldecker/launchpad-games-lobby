@@ -136,6 +136,20 @@
                 Tokens: {{ formatUsage(result.meta.usage) }}
               </span>
             </div>
+            <div
+              v-if="result.judge"
+              class="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-slate-300"
+            >
+              <span class="uppercase tracking-[0.2em] text-fuchsia-200">
+                Judge (Brand Accuracy)
+              </span>
+              <p class="mt-2">
+                Score: {{ formatJudgeScore(result.judge.score) }}
+              </p>
+              <p v-if="result.judge.reasoning" class="mt-1 text-slate-400">
+                {{ result.judge.reasoning }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -216,6 +230,11 @@ const result = ref<
       meta?: {
         stopReason?: string
         usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number }
+      }
+      judge?: {
+        metricKey: string
+        score: number
+        reasoning: string
       }
     }
 >(null)
@@ -451,7 +470,19 @@ const normalizeJudge = (value: unknown) => {
               : undefined
         }
       : undefined
-  return { score, label, verdict, comment, meta: metaNormalized }
+  const judge =
+    payload.judge && typeof payload.judge === 'object'
+      ? (payload.judge as { metricKey?: unknown; score?: unknown; reasoning?: unknown })
+      : undefined
+  const judgeNormalized =
+    judge && typeof judge.metricKey === 'string' && typeof judge.score === 'number'
+      ? {
+          metricKey: judge.metricKey,
+          score: judge.score,
+          reasoning: typeof judge.reasoning === 'string' ? judge.reasoning : ''
+        }
+      : undefined
+  return { score, label, verdict, comment, meta: metaNormalized, judge: judgeNormalized }
 }
 
 const formatUsage = (usage: {
@@ -470,6 +501,11 @@ const formatUsage = (usage: {
     parts.push(`total ${usage.totalTokens}`)
   }
   return parts.join(' · ')
+}
+
+const formatJudgeScore = (score: number) => {
+  if (Number.isNaN(score)) return 'n/a'
+  return `${Math.round(score * 100)}%`
 }
 
 const startRound = async () => {

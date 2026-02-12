@@ -1,6 +1,11 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime'
 import { init, type LDClient } from '@launchdarkly/node-server-sdk'
-import { initAi, type LDAIClient, type LDAIMetrics } from '@launchdarkly/server-sdk-ai'
+import {
+  initAi,
+  type LDAIClient,
+  type LDAIMetrics,
+  type JudgeResponse
+} from '@launchdarkly/server-sdk-ai'
 
 type AiConfigInput = {
   type: 'prompt' | 'judge'
@@ -202,6 +207,8 @@ export default defineEventHandler(async (event) => {
       process.env.LD_AI_CONFIG_PROMPT_KEY ?? 'talkin-ship-prompt'
     const judgeKey =
       process.env.LD_AI_CONFIG_JUDGE_KEY ?? 'talkin-ship-judge'
+    const judgeEvalKey =
+      process.env.LD_AI_CONFIG_JUDGE_EVAL_KEY ?? 'brand-accuracy'
     const configKey = type === 'prompt' ? promptKey : judgeKey
     const ctx = buildContext(body.context)
     console.info('[AI Config] Request received', {
@@ -300,7 +307,34 @@ export default defineEventHandler(async (event) => {
     try {
       const parsed = JSON.parse(stripJsonCodeFence(content))
       const judge = extractJudge(parsed)
-      return judge ? { ...judge, meta } : { verdict: content, meta }
+      let judgeResult: JudgeResponse | undefined
+      if (judge && aiConfig.tracker?.trackJudgeResponse) {
+        judgeResult = {
+          judgeConfigKey: judgeEvalKey,
+          evals: {
+            [judgeEvalKey]: {
+              score: typeof judge.score === 'number' ? judge.score / 100 : 0,
+              reasoning: judge.comment ?? judge.verdict ?? ''
+            }
+          },
+          success: true
+        }
+        aiConfig.tracker.trackJudgeResponse(judgeResult)
+      }
+
+      return judge
+        ? {
+            ...judge,
+            meta,
+            judge: judgeResult
+              ? {
+                  metricKey: judgeEvalKey,
+                  score: judgeResult.evals[judgeEvalKey]?.score ?? 0,
+                  reasoning: judgeResult.evals[judgeEvalKey]?.reasoning ?? ''
+                }
+              : undefined
+          }
+        : { verdict: content, meta }
     } catch {
       return { verdict: content, meta }
     }
