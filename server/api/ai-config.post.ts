@@ -150,6 +150,14 @@ const stripJsonCodeFence = (value: string) => {
   return lines.slice(startIndex, endIndex).join('\n').trim()
 }
 
+const safeParseJson = (value: string) => {
+  try {
+    return JSON.parse(stripJsonCodeFence(value))
+  } catch {
+    return null
+  }
+}
+
 type BedrockMessage = {
   role: 'user' | 'assistant'
   content: { text: string }[]
@@ -305,7 +313,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      const parsed = JSON.parse(stripJsonCodeFence(content))
+      const parsed = safeParseJson(content)
       const judge = extractJudge(parsed)
       const promptValue =
         typeof body.input?.prompt === 'string' ? body.input.prompt : ''
@@ -354,7 +362,7 @@ export default defineEventHandler(async (event) => {
             const evalContent =
               evalCompletion.output?.message?.content?.[0]?.text?.trim() ?? ''
             if (evalContent) {
-              const evalParsed = JSON.parse(stripJsonCodeFence(evalContent))
+              const evalParsed = safeParseJson(evalContent)
               const evalJudge = extractJudge(evalParsed)
               if (evalJudge) {
                 const rawScore =
