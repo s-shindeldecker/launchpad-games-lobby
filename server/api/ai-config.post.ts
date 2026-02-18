@@ -158,6 +158,91 @@ const safeParseJson = (value: string) => {
   }
 }
 
+const evaluateJudge = async ({
+  promptValue,
+  responseValue,
+  ctx,
+  judgeEvalKey,
+  aiClient,
+  bedrockClient
+}: {
+  promptValue: string
+  responseValue: string
+  ctx: AiContext
+  judgeEvalKey: string
+  aiClient: LDAIClient
+  bedrockClient: BedrockRuntimeClient
+}) => {
+  if (!promptValue || !responseValue) return undefined
+  try {
+    const judgeConfig = await aiClient.judgeConfig(
+      judgeEvalKey,
+      ctx,
+      { enabled: false },
+      { prompt: promptValue, response: responseValue }
+    )
+    if (!judgeConfig.enabled || !judgeConfig.model?.name) return undefined
+
+    const evalMessages = judgeConfig.messages ? [...judgeConfig.messages] : []
+    if (!evalMessages.length) {
+      evalMessages.push({
+        role: 'user',
+        content: `Prompt: ${promptValue}\nResponse: ${responseValue}`
+      })
+    }
+
+    const { system: evalSystem, messages: evalBedrockMessages } =
+      toBedrockMessages(evalMessages)
+    const invokeEvalModel = () =>
+      bedrockClient.send(
+        new ConverseCommand({
+          modelId: judgeConfig.model!.name,
+          messages: evalBedrockMessages,
+          system: evalSystem
+        })
+      )
+    const evalCompletion = judgeConfig.tracker?.trackMetricsOf
+      ? await judgeConfig.tracker.trackMetricsOf(
+          mapBedrockMetrics,
+          invokeEvalModel
+        )
+      : await invokeEvalModel()
+    const evalContent =
+      evalCompletion.output?.message?.content?.[0]?.text?.trim() ?? ''
+    if (!evalContent) return undefined
+
+    const evalParsed = safeParseJson(evalContent)
+    const evalJudge = extractJudge(evalParsed)
+    if (!evalJudge) return undefined
+
+    const rawScore = typeof evalJudge.score === 'number' ? evalJudge.score : 0
+    const normalizedScore = rawScore > 1 ? rawScore / 100 : rawScore
+    const judgeResult: JudgeResponse = {
+      judgeConfigKey: judgeEvalKey,
+      evals: {
+        [judgeEvalKey]: {
+          score: normalizedScore,
+          reasoning: evalJudge.comment ?? evalJudge.verdict ?? ''
+        }
+      },
+      success: true
+    }
+    judgeConfig.tracker?.trackJudgeResponse(judgeResult)
+
+    return {
+      metricKey: judgeEvalKey,
+      score: normalizedScore,
+      reasoning: judgeResult.evals[judgeEvalKey]?.reasoning ?? ''
+    }
+  } catch (judgeError) {
+    console.warn('[AI Config] Judge evaluation failed', {
+      message:
+        judgeError instanceof Error ? judgeError.message : String(judgeError)
+    })
+    return undefined
+  }
+}
+
 type BedrockMessage = {
   role: 'user' | 'assistant'
   content: { text: string }[]
@@ -309,7 +394,15 @@ export default defineEventHandler(async (event) => {
     }
 
     if (type === 'prompt') {
-      return { prompt: content, meta }
+      const promptJudge = await evaluateJudge({
+        promptValue: content,
+        responseValue: content,
+        ctx,
+        judgeEvalKey,
+        aiClient,
+        bedrockClient
+      })
+      return { prompt: content, meta, judge: promptJudge }
     }
 
     try {
@@ -319,84 +412,14 @@ export default defineEventHandler(async (event) => {
         typeof body.input?.prompt === 'string' ? body.input.prompt : ''
       const responseValue =
         typeof body.input?.response === 'string' ? body.input.response : ''
-      let judgeResult: JudgeResponse | undefined
-      let judgeDisplay:
-        | { metricKey: string; score: number; reasoning: string }
-        | undefined
-
-      if (promptValue && responseValue) {
-        try {
-          const judgeConfig = await aiClient.judgeConfig(
-            judgeEvalKey,
-            ctx,
-            { enabled: false },
-            { prompt: promptValue, response: responseValue }
-          )
-          if (judgeConfig.enabled && judgeConfig.model?.name) {
-            const evalMessages = judgeConfig.messages
-              ? [...judgeConfig.messages]
-              : []
-            if (!evalMessages.length) {
-              evalMessages.push({
-                role: 'user',
-                content: `Prompt: ${promptValue}\nResponse: ${responseValue}`
-              })
-            }
-
-            const { system: evalSystem, messages: evalBedrockMessages } =
-              toBedrockMessages(evalMessages)
-            const invokeEvalModel = () =>
-              bedrockClient!.send(
-                new ConverseCommand({
-                  modelId: judgeConfig.model!.name,
-                  messages: evalBedrockMessages,
-                  system: evalSystem
-                })
-              )
-            const evalCompletion = judgeConfig.tracker?.trackMetricsOf
-              ? await judgeConfig.tracker.trackMetricsOf(
-                  mapBedrockMetrics,
-                  invokeEvalModel
-                )
-              : await invokeEvalModel()
-            const evalContent =
-              evalCompletion.output?.message?.content?.[0]?.text?.trim() ?? ''
-            if (evalContent) {
-              const evalParsed = safeParseJson(evalContent)
-              const evalJudge = extractJudge(evalParsed)
-              if (evalJudge) {
-                const rawScore =
-                  typeof evalJudge.score === 'number' ? evalJudge.score : 0
-                const normalizedScore = rawScore > 1 ? rawScore / 100 : rawScore
-                judgeResult = {
-                  judgeConfigKey: judgeEvalKey,
-                  evals: {
-                    [judgeEvalKey]: {
-                      score: normalizedScore,
-                      reasoning: evalJudge.comment ?? evalJudge.verdict ?? ''
-                    }
-                  },
-                  success: true
-                }
-                judgeConfig.tracker?.trackJudgeResponse(judgeResult)
-                judgeDisplay = {
-                  metricKey: judgeEvalKey,
-                  score: normalizedScore,
-                  reasoning:
-                    judgeResult.evals[judgeEvalKey]?.reasoning ?? ''
-                }
-              }
-            }
-          }
-        } catch (judgeError) {
-          console.warn('[AI Config] Judge evaluation failed', {
-            message:
-              judgeError instanceof Error
-                ? judgeError.message
-                : String(judgeError)
-          })
-        }
-      }
+      const judgeDisplay = await evaluateJudge({
+        promptValue,
+        responseValue,
+        ctx,
+        judgeEvalKey,
+        aiClient,
+        bedrockClient
+      })
 
       return judge
         ? {

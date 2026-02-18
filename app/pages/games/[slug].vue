@@ -136,19 +136,36 @@
                 Tokens: {{ formatUsage(result.meta.usage) }}
               </span>
             </div>
-            <div
-              v-if="result.judge"
-              class="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-slate-300"
-            >
-              <span class="uppercase tracking-[0.2em] text-fuchsia-200">
-                Judge (Brand Accuracy)
-              </span>
-              <p class="mt-2">
-                Score: {{ formatJudgeScore(result.judge.score) }}
-              </p>
-              <p v-if="result.judge.reasoning" class="mt-1 text-slate-400">
-                {{ result.judge.reasoning }}
-              </p>
+          </div>
+          <div
+            v-if="promptJudge || responseJudge"
+            class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4"
+          >
+            <p class="text-xs uppercase tracking-[0.3em] text-fuchsia-200">
+              Judge Results (Brand Accuracy)
+            </p>
+            <div class="mt-3 space-y-3 text-sm text-slate-200">
+              <div v-if="promptJudge">
+                <p class="text-xs text-slate-400">Prompt judge</p>
+                <p class="mt-1 text-sm">
+                  Score: {{ formatJudgeScore(promptJudge.score) }}
+                </p>
+                <p v-if="promptJudge.reasoning" class="mt-1 text-xs text-slate-400">
+                  {{ promptJudge.reasoning }}
+                </p>
+              </div>
+              <div v-if="responseJudge">
+                <p class="text-xs text-slate-400">Response judge</p>
+                <p class="mt-1 text-sm">
+                  Score: {{ formatJudgeScore(responseJudge.score) }}
+                </p>
+                <p
+                  v-if="responseJudge.reasoning"
+                  class="mt-1 text-xs text-slate-400"
+                >
+                  {{ responseJudge.reasoning }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -432,6 +449,51 @@ const normalizePrompt = (value: unknown) => {
   return ''
 }
 
+const parseJudgeString = (raw: string) => {
+  const trimmed = raw.trim()
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('```')) return null
+  try {
+    const cleaned = trimmed.startsWith('```')
+      ? trimmed
+          .split('\n')
+          .slice(1, -1)
+          .join('\n')
+          .trim()
+      : trimmed
+    const parsed = JSON.parse(cleaned)
+    if (parsed && typeof parsed === 'object') {
+      return parsed as {
+        score?: unknown
+        label?: unknown
+        verdict?: unknown
+        comment?: unknown
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+type JudgeDisplay = {
+  metricKey: string
+  score: number
+  reasoning: string
+}
+
+const normalizeJudgeDisplay = (value: unknown): JudgeDisplay | null => {
+  if (!value || typeof value !== 'object') return null
+  const payload = value as { metricKey?: unknown; score?: unknown; reasoning?: unknown }
+  if (typeof payload.metricKey !== 'string' || typeof payload.score !== 'number') {
+    return null
+  }
+  return {
+    metricKey: payload.metricKey,
+    score: payload.score,
+    reasoning: typeof payload.reasoning === 'string' ? payload.reasoning : ''
+  }
+}
+
 const normalizeJudge = (value: unknown) => {
   if (!value || typeof value !== 'object') return fallbackJudge
   const payload = value as {
@@ -440,15 +502,24 @@ const normalizeJudge = (value: unknown) => {
     verdict?: unknown
     comment?: unknown
     meta?: unknown
+    judge?: unknown
   }
   const score =
     typeof payload.score === 'number' ? Math.round(payload.score) : fallbackJudge.score
   const label =
     typeof payload.label === 'string' ? payload.label : fallbackJudge.label
-  const verdict =
+  let verdict =
     typeof payload.verdict === 'string' ? payload.verdict : fallbackJudge.verdict
-  const comment =
+  let comment =
     typeof payload.comment === 'string' ? payload.comment : undefined
+
+  if (verdict) {
+    const parsed = parseJudgeString(verdict)
+    if (parsed) {
+      if (typeof parsed.verdict === 'string') verdict = parsed.verdict
+      if (typeof parsed.comment === 'string') comment = parsed.comment
+    }
+  }
   const meta = payload.meta as
     | {
         stopReason?: unknown
@@ -470,19 +541,14 @@ const normalizeJudge = (value: unknown) => {
               : undefined
         }
       : undefined
-  const judge =
-    payload.judge && typeof payload.judge === 'object'
-      ? (payload.judge as { metricKey?: unknown; score?: unknown; reasoning?: unknown })
-      : undefined
-  const judgeNormalized =
-    judge && typeof judge.metricKey === 'string' && typeof judge.score === 'number'
-      ? {
-          metricKey: judge.metricKey,
-          score: judge.score,
-          reasoning: typeof judge.reasoning === 'string' ? judge.reasoning : ''
-        }
-      : undefined
-  return { score, label, verdict, comment, meta: metaNormalized, judge: judgeNormalized }
+  return {
+    score,
+    label,
+    verdict,
+    comment,
+    meta: metaNormalized,
+    judge: normalizeJudgeDisplay(payload.judge)
+  }
 }
 
 const formatUsage = (usage: {
@@ -508,10 +574,15 @@ const formatJudgeScore = (score: number) => {
   return `${Math.round(score * 100)}%`
 }
 
+const promptJudge = ref<JudgeDisplay | null>(null)
+const responseJudge = ref<JudgeDisplay | null>(null)
+
 const startRound = async () => {
   errorMessage.value = ''
   result.value = null
   response.value = ''
+  promptJudge.value = null
+  responseJudge.value = null
   isBusy.value = true
   try {
     const output = await $fetch('/api/ai-config', {
@@ -523,6 +594,11 @@ const startRound = async () => {
       }
     })
     const nextPrompt = normalizePrompt(output)
+    if (output && typeof output === 'object' && 'judge' in output) {
+      promptJudge.value = normalizeJudgeDisplay(
+        (output as { judge?: unknown }).judge
+      )
+    }
     prompt.value =
       nextPrompt || fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)]
   } catch {
@@ -546,7 +622,9 @@ const submitResponse = async () => {
         context: buildContextPayload()
       }
     })
-    result.value = normalizeJudge(output)
+    const normalized = normalizeJudge(output)
+    result.value = normalized
+    responseJudge.value = normalized.judge ?? null
   } catch {
     result.value = fallbackJudge
     errorMessage.value = 'Judge unavailable. Showing a fallback verdict.'
