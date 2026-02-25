@@ -59,12 +59,12 @@
 
         <div
           v-if="showAiJudge"
-          class="mt-8 rounded-3xl border border-white/10 bg-slate-900/50 p-6"
+          class="font-gameBody mt-8 rounded-3xl border-2 border-amber-400/60 bg-slate-900/80 p-6 shadow-xl shadow-amber-500/10"
         >
-          <p class="text-xs uppercase tracking-[0.3em] text-fuchsia-200">
+          <p class="font-game text-sm uppercase tracking-wider text-amber-300">
             Talkin’ Ship (AI Judge Edition)
           </p>
-          <h2 class="mt-3 text-lg font-semibold text-white">
+          <h2 class="font-game mt-3 text-xl text-white drop-shadow-sm">
             Try a ship‑pun challenge
           </h2>
           <p class="mt-2 text-sm text-slate-200/90">
@@ -72,13 +72,20 @@
             score it.
           </p>
 
-          <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p class="text-xs text-slate-400">Prompt</p>
-            <p v-if="prompt" class="mt-2 text-sm text-white">
+          <div
+            class="mt-5 rounded-2xl border-2 border-amber-400/40 bg-amber-950/30 p-4 shadow-inner"
+          >
+            <p class="font-game text-xs uppercase tracking-wider text-amber-300">
+              Challenge
+            </p>
+            <p
+              v-if="prompt"
+              class="mt-2 text-base font-medium leading-snug text-amber-100"
+            >
               {{ prompt }}
             </p>
-            <p v-else class="mt-2 text-sm text-slate-400">
-              Click “Start Round” to get a prompt.
+            <p v-else class="mt-2 text-sm text-amber-200/70">
+              Click "Start Round" to get a prompt.
             </p>
           </div>
 
@@ -86,7 +93,7 @@
             <textarea
               v-model="response"
               rows="3"
-              class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-fuchsia-400/60 focus:outline-none"
+              class="w-full rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 px-4 py-3 text-sm text-amber-50 placeholder:text-amber-200/50 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
               :placeholder="prompt ? 'Your ship pun goes here…' : 'Get a prompt first'"
               :disabled="!prompt || isBusy"
             ></textarea>
@@ -94,14 +101,14 @@
 
           <div class="mt-4 flex flex-wrap gap-3">
             <button
-              class="rounded-full border border-fuchsia-400/40 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              class="rounded-full border-2 border-amber-400/60 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20 hover:border-amber-400/80 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="isBusy"
               @click="startRound"
             >
               {{ prompt ? 'New Prompt' : 'Start Round' }}
             </button>
             <button
-              class="rounded-full bg-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+              class="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!prompt || !response.trim() || isBusy"
               @click="submitResponse"
             >
@@ -115,14 +122,21 @@
 
           <div
             v-if="result"
-            class="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+            class="mt-5 rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
           >
-            <div class="flex items-center justify-between text-xs text-slate-400">
+            <div
+              class="flex items-center justify-between font-game text-xs uppercase tracking-wider text-amber-300"
+            >
               <span>Score</span>
               <span>{{ result.score }} · {{ result.label.toUpperCase() }}</span>
             </div>
-            <p class="mt-2 text-sm text-white">{{ result.verdict }}</p>
-            <p v-if="result.comment" class="mt-2 text-xs text-slate-300">
+            <p
+              class="mt-2 text-base font-medium"
+              :class="verdictColorClass(result.score)"
+            >
+              {{ result.verdict }}
+            </p>
+            <p v-if="result.comment" class="mt-2 text-sm text-slate-300">
               {{ result.comment }}
             </p>
             <div
@@ -139,24 +153,27 @@
           </div>
           <div
             v-if="promptJudge || responseJudge"
-            class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4"
+            class="mt-5 rounded-2xl border-2 border-amber-400/30 bg-white/5 p-4"
           >
-            <p class="text-xs uppercase tracking-[0.3em] text-fuchsia-200">
+            <p class="font-game text-xs uppercase tracking-wider text-amber-300">
               Judge Results (Brand Accuracy)
             </p>
             <div class="mt-3 space-y-3 text-sm text-slate-200">
               <div v-if="promptJudge">
-                <p class="text-xs text-slate-400">Prompt judge</p>
-                <p class="mt-1 text-sm">
+                <p class="text-xs text-amber-200/90">Prompt judge</p>
+                <p class="mt-1 text-sm font-medium text-amber-100">
                   Score: {{ formatJudgeScore(promptJudge.score) }}
                 </p>
-                <p v-if="promptJudge.reasoning" class="mt-1 text-xs text-slate-400">
+                <p
+                  v-if="promptJudge.reasoning"
+                  class="mt-1 text-xs text-slate-400"
+                >
                   {{ promptJudge.reasoning }}
                 </p>
               </div>
               <div v-if="responseJudge">
-                <p class="text-xs text-slate-400">Response judge</p>
-                <p class="mt-1 text-sm">
+                <p class="text-xs text-amber-200/90">Response judge</p>
+                <p class="mt-1 text-sm font-medium text-amber-100">
                   Score: {{ formatJudgeScore(responseJudge.score) }}
                 </p>
                 <p
@@ -572,6 +589,12 @@ const formatUsage = (usage: {
 const formatJudgeScore = (score: number) => {
   if (Number.isNaN(score)) return 'n/a'
   return `${Math.round(score * 100)}%`
+}
+
+const verdictColorClass = (score: number) => {
+  if (score >= 80) return 'text-emerald-200'
+  if (score >= 50) return 'text-amber-200'
+  return 'text-amber-100'
 }
 
 const promptJudge = ref<JudgeDisplay | null>(null)
