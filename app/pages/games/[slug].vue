@@ -73,8 +73,12 @@
           </p>
 
           <div
-            class="mt-5 rounded-2xl border-2 border-amber-400/40 bg-amber-950/30 p-4 shadow-inner"
+            class="relative mt-5 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-amber-950/30 p-4 shadow-inner"
           >
+            <div
+              v-if="isBusy"
+              class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+            ></div>
             <p class="font-game text-xs uppercase tracking-wider text-amber-300">
               Challenge
             </p>
@@ -115,6 +119,19 @@
               Submit Response
             </button>
           </div>
+          <div
+            v-if="isBusy"
+            class="mt-3 flex items-center gap-2 text-xs text-amber-200"
+          >
+            <span class="h-2 w-2 animate-pulse rounded-full bg-amber-300"></span>
+            <span
+              class="h-2 w-2 animate-pulse rounded-full bg-amber-300 [animation-delay:150ms]"
+            ></span>
+            <span
+              class="h-2 w-2 animate-pulse rounded-full bg-amber-300 [animation-delay:300ms]"
+            ></span>
+            <span class="uppercase tracking-wider">Thinking</span>
+          </div>
 
           <p v-if="errorMessage" class="mt-3 text-xs text-rose-300">
             {{ errorMessage }}
@@ -122,8 +139,12 @@
 
           <div
             v-if="result"
-            class="mt-5 rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
+            class="relative mt-5 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
           >
+            <div
+              v-if="isBusy"
+              class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+            ></div>
             <div
               class="flex items-center justify-between font-game text-xs uppercase tracking-wider text-amber-300"
             >
@@ -149,6 +170,22 @@
               <span v-if="result.meta.usage">
                 Tokens: {{ formatUsage(result.meta.usage) }}
               </span>
+            </div>
+          </div>
+          <div
+            v-else-if="isBusy"
+            class="relative mt-5 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
+          >
+            <div
+              class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+            ></div>
+            <div class="flex items-center justify-between text-xs text-amber-300">
+              <span>Score</span>
+              <span>—</span>
+            </div>
+            <div class="mt-3 space-y-2">
+              <div class="h-3 w-3/4 rounded-full bg-amber-200/20"></div>
+              <div class="h-3 w-2/3 rounded-full bg-amber-200/10"></div>
             </div>
           </div>
           <div
