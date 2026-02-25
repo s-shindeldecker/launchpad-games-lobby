@@ -1,7 +1,9 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime'
 import { init, type LDClient } from '@launchdarkly/node-server-sdk'
 import {
+  AIProviderFactory,
   initAi,
+  type LDMessage,
   type LDAIClient,
   type LDAIMetrics,
   type JudgeResponse
@@ -41,14 +43,9 @@ const ensureClients = async () => {
     if (!sdkKey) {
       throw new Error('missing_launchdarkly_sdk_key')
     }
-    const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    if (!region) {
-      throw new Error('missing_aws_region')
-    }
     ldClient = init(sdkKey)
     await ldClient.waitForInitialization()
     aiClient = initAi(ldClient)
-    bedrockClient = new BedrockRuntimeClient({ region })
   })()
   await initPromise
 }
@@ -158,20 +155,107 @@ const safeParseJson = (value: string) => {
   }
 }
 
+// Env notes:
+// - LAUNCHDARKLY_SDK_KEY is always required
+// - AWS_REGION/AWS_DEFAULT_REGION required only for Bedrock configs
+// - OPENAI_API_KEY required only for OpenAI configs (LD AI provider)
+const resolveProviderName = (providerName?: string | null) => {
+  if (!providerName) return 'bedrock'
+  const normalized = providerName.toLowerCase().trim()
+  if (normalized.includes('openai')) return 'openai'
+  if (normalized.includes('bedrock') || normalized.includes('amazon')) {
+    return 'bedrock'
+  }
+  return 'unknown'
+}
+
+const ensureBedrockClient = () => {
+  if (bedrockClient) return bedrockClient
+  const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  if (!region) {
+    throw new Error('missing_aws_region')
+  }
+  bedrockClient = new BedrockRuntimeClient({ region })
+  return bedrockClient
+}
+
+const mapUsageFromMetrics = (metrics?: LDAIMetrics) => {
+  if (!metrics?.usage) return undefined
+  return {
+    inputTokens: metrics.usage.input,
+    outputTokens: metrics.usage.output,
+    totalTokens: metrics.usage.total
+  }
+}
+
+const invokeProviderCompletion = async ({
+  aiConfig,
+  messages,
+  providerName
+}: {
+  aiConfig: { model?: { name?: string }; tracker?: { trackMetricsOf?: Function } }
+  messages: LDMessage[]
+  providerName: string
+}) => {
+  if (providerName === 'openai') {
+    const provider = await AIProviderFactory.create(aiConfig as any)
+    if (!provider) {
+      throw new Error('openai_provider_unavailable')
+    }
+    const invoke = () => provider.invokeModel(messages)
+    const completion = aiConfig.tracker?.trackMetricsOf
+      ? await aiConfig.tracker.trackMetricsOf(
+          (result: { metrics?: LDAIMetrics }) =>
+            result.metrics ?? { success: true },
+          invoke
+        )
+      : await invoke()
+    return {
+      content: completion.message?.content?.trim() ?? '',
+      meta: {
+        usage: mapUsageFromMetrics(completion.metrics)
+      }
+    }
+  }
+
+  if (providerName !== 'bedrock') {
+    throw new Error('unsupported_provider')
+  }
+
+  const bedrock = ensureBedrockClient()
+  const { system, messages: bedrockMessages } = toBedrockMessages(messages)
+  const invoke = () =>
+    bedrock.send(
+      new ConverseCommand({
+        modelId: aiConfig.model!.name,
+        messages: bedrockMessages,
+        system
+      })
+    )
+  const completion = aiConfig.tracker?.trackMetricsOf
+    ? await aiConfig.tracker.trackMetricsOf(mapBedrockMetrics, invoke)
+    : await invoke()
+  return {
+    content: completion.output?.message?.content?.[0]?.text?.trim() ?? '',
+    meta: {
+      stopReason: completion.stopReason,
+      usage: completion.usage
+    }
+  }
+}
+
 const evaluateJudge = async ({
   promptValue,
   responseValue,
   ctx,
   judgeEvalKey,
-  aiClient,
-  bedrockClient
+  aiClient
 }: {
   promptValue: string
   responseValue: string
   ctx: AiContext
   judgeEvalKey: string
   aiClient: LDAIClient
-  bedrockClient: BedrockRuntimeClient
 }) => {
   if (!promptValue || !responseValue) return undefined
   try {
@@ -182,6 +266,13 @@ const evaluateJudge = async ({
       { prompt: promptValue, response: responseValue }
     )
     if (!judgeConfig.enabled || !judgeConfig.model?.name) return undefined
+    const judgeProviderName = resolveProviderName(judgeConfig.provider?.name)
+    if (judgeProviderName === 'unknown') {
+      console.warn('[AI Config] Judge provider unsupported', {
+        providerName: judgeConfig.provider?.name
+      })
+      return undefined
+    }
 
     const evalMessages = judgeConfig.messages ? [...judgeConfig.messages] : []
     if (!evalMessages.length) {
@@ -190,25 +281,12 @@ const evaluateJudge = async ({
         content: `Prompt: ${promptValue}\nResponse: ${responseValue}`
       })
     }
-
-    const { system: evalSystem, messages: evalBedrockMessages } =
-      toBedrockMessages(evalMessages)
-    const invokeEvalModel = () =>
-      bedrockClient.send(
-        new ConverseCommand({
-          modelId: judgeConfig.model!.name,
-          messages: evalBedrockMessages,
-          system: evalSystem
-        })
-      )
-    const evalCompletion = judgeConfig.tracker?.trackMetricsOf
-      ? await judgeConfig.tracker.trackMetricsOf(
-          mapBedrockMetrics,
-          invokeEvalModel
-        )
-      : await invokeEvalModel()
-    const evalContent =
-      evalCompletion.output?.message?.content?.[0]?.text?.trim() ?? ''
+    const evalCompletion = await invokeProviderCompletion({
+      aiConfig: judgeConfig,
+      messages: evalMessages,
+      providerName: judgeProviderName
+    })
+    const evalContent = evalCompletion.content
     if (!evalContent) return undefined
 
     const evalParsed = safeParseJson(evalContent)
@@ -348,24 +426,26 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const { system, messages: bedrockMessages } = toBedrockMessages(messages)
-
+    const providerName = resolveProviderName(aiConfig.provider?.name)
+    if (providerName === 'unknown') {
+      console.error('[AI Config] Provider unsupported', {
+        providerName: aiConfig.provider?.name
+      })
+      return { error: 'provider_unavailable' }
+    }
+    console.info('[AI Config] Provider selected', {
+      configKey,
+      providerName
+    })
     console.info('[AI Config] Metrics tracker available', {
       available: Boolean(aiConfig.tracker?.trackMetricsOf)
     })
 
-    const invokeModel = () =>
-      bedrockClient!.send(
-        new ConverseCommand({
-          modelId: aiConfig.model!.name,
-          messages: bedrockMessages,
-          system
-        })
-      )
-
-    const completion = aiConfig.tracker?.trackMetricsOf
-      ? await aiConfig.tracker.trackMetricsOf(mapBedrockMetrics, invokeModel)
-      : await invokeModel()
+    const completion = await invokeProviderCompletion({
+      aiConfig,
+      messages,
+      providerName
+    })
     if (ldClient) {
       try {
         await ldClient.flush()
@@ -378,7 +458,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const content = completion.output?.message?.content?.[0]?.text?.trim()
+    const content = completion.content
     if (!content) {
       console.error('[AI Config] Empty model response', { configKey })
       return { error: type === 'prompt' ? 'invalid_prompt' : 'invalid_judge' }
@@ -388,10 +468,7 @@ export default defineEventHandler(async (event) => {
       responsePreview: content.slice(0, 200)
     })
 
-    const meta = {
-      stopReason: completion.stopReason,
-      usage: completion.usage
-    }
+    const meta = completion.meta
 
     if (type === 'prompt') {
       const promptJudge = await evaluateJudge({
@@ -399,8 +476,7 @@ export default defineEventHandler(async (event) => {
         responseValue: content,
         ctx,
         judgeEvalKey,
-        aiClient,
-        bedrockClient
+        aiClient
       })
       return { prompt: content, meta, judge: promptJudge }
     }
@@ -417,8 +493,7 @@ export default defineEventHandler(async (event) => {
         responseValue,
         ctx,
         judgeEvalKey,
-        aiClient,
-        bedrockClient
+        aiClient
       })
 
       return judge
