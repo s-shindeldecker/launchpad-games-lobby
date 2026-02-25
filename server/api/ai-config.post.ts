@@ -369,7 +369,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     await ensureClients()
-    if (!aiClient || !bedrockClient) {
+    if (!aiClient) {
       console.error('[AI Config] Clients unavailable')
       return { error: 'config_unavailable' }
     }
