@@ -145,11 +145,17 @@
               v-if="isBusy"
               class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
             ></div>
-            <div
-              class="flex items-center justify-between font-game text-xs uppercase tracking-wider text-amber-300"
-            >
-              <span>Score</span>
-              <span>{{ result.score }} · {{ result.label.toUpperCase() }}</span>
+            <div class="flex flex-wrap items-center gap-3">
+              <span
+                class="rounded-full border border-amber-300/60 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-wider text-amber-200"
+              >
+                Score
+              </span>
+              <span
+                class="font-game text-3xl font-semibold text-amber-100 drop-shadow-sm"
+              >
+                {{ result.score }}
+              </span>
             </div>
             <p
               class="mt-2 text-base font-medium"
@@ -179,9 +185,18 @@
             <div
               class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
             ></div>
-            <div class="flex items-center justify-between text-xs text-amber-300">
-              <span>Score</span>
-              <span>—</span>
+            <div class="flex flex-wrap items-center gap-3">
+              <span
+                class="rounded-full border border-amber-300/60 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-wider text-amber-200"
+              >
+                Score
+              </span>
+              <span class="font-game text-3xl font-semibold text-amber-100">
+                —
+              </span>
+              <span class="text-xs uppercase tracking-wider text-amber-300">
+                Loading
+              </span>
             </div>
             <div class="mt-3 space-y-2">
               <div class="h-3 w-3/4 rounded-full bg-amber-200/20"></div>
