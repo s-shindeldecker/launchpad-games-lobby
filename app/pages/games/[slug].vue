@@ -302,18 +302,86 @@
         </NuxtLink>
       </div>
     </section>
+      <div
+        v-if="showAiJudge && isDebugOpen"
+        class="fixed bottom-6 right-6 z-50 w-[360px] rounded-2xl border border-amber-400/40 bg-slate-950/95 p-4 text-xs text-slate-200 shadow-2xl"
+      >
+        <div class="flex items-center justify-between">
+          <p class="font-game text-xs uppercase tracking-wider text-amber-300">
+            Debug Console
+          </p>
+          <button
+            class="rounded-full border border-amber-400/40 px-2 py-1 text-[10px] text-amber-100 transition hover:border-amber-300 hover:text-amber-50"
+            @click="isDebugOpen = false"
+          >
+            Close
+          </button>
+        </div>
+        <div class="mt-3 space-y-3">
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-amber-200/80">
+              Client logs
+            </p>
+            <div
+              class="mt-2 max-h-40 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-2"
+            >
+              <p v-if="!clientLogs.length" class="text-[10px] text-slate-400">
+                No client logs yet.
+              </p>
+              <div
+                v-for="(entry, index) in clientLogs"
+                :key="`client-${index}`"
+                class="space-y-1 text-[10px]"
+              >
+                <p class="text-slate-500">
+                  {{ entry.ts }}
+                  <span class="uppercase tracking-wider text-amber-200/80">
+                    {{ entry.level }}
+                  </span>
+                </p>
+                <p class="text-slate-200">{{ entry.message }}</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-amber-200/80">
+              Server logs
+            </p>
+            <div
+              class="mt-2 max-h-40 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-2"
+            >
+              <p v-if="!serverLogs.length" class="text-[10px] text-slate-400">
+                No server logs yet.
+              </p>
+              <div
+                v-for="(entry, index) in serverLogs"
+                :key="`server-${index}`"
+                class="space-y-1 text-[10px]"
+              >
+                <p class="text-slate-500">
+                  {{ entry.ts }}
+                  <span class="uppercase tracking-wider text-amber-200/80">
+                    {{ entry.level }}
+                  </span>
+                </p>
+                <p class="text-slate-200">{{ entry.message }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { trackEvent } from '~/utils/analytics'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 import { useCart } from '~/composables/useCart'
 
 const route = useRoute()
-const { $launchDarkly } = useNuxtApp()
+const { $launchDarkly, $debugLogs } = useNuxtApp()
 const lastTrackedSlug = ref<string | null>(null)
 const { getFlagValue, isReady } = useLaunchDarkly()
 const pdpLargeImages = ref(false)
@@ -342,6 +410,19 @@ const result = ref<
 >(null)
 const isBusy = ref(false)
 const errorMessage = ref('')
+const isDebugOpen = ref(false)
+
+type DebugLogEntry = {
+  ts: string
+  level: string
+  message: string
+}
+
+const clientLogs = computed<DebugLogEntry[]>(
+  () => ($debugLogs?.logs?.value as DebugLogEntry[]) ?? []
+)
+const serverLogs = ref<DebugLogEntry[]>([])
+let serverLogTimer: ReturnType<typeof setInterval> | null = null
 
 const isTalkinShip = computed(
   () => route.params.slug === 'talkin-ship'
@@ -394,6 +475,50 @@ watchEffect(() => {
   pdpLargeImages.value = getFlagValue('plp-large-images', pdpLargeImages.value)
   aiJudgeEnabled.value = getFlagValue('ai-judge-enabled', true)
   promptTone.value = getFlagValue('ai-prompt-variant', 'playful')
+})
+
+const fetchServerLogs = async () => {
+  try {
+    const response = await $fetch('/api/debug-logs')
+    if (response && typeof response === 'object' && 'logs' in response) {
+      const payload = response as { logs?: DebugLogEntry[] }
+      serverLogs.value = payload.logs ?? []
+    }
+  } catch {
+    // Ignore debug polling errors.
+  }
+}
+
+watch(isDebugOpen, (isOpen) => {
+  if (isOpen) {
+    void fetchServerLogs()
+    if (!serverLogTimer) {
+      serverLogTimer = setInterval(fetchServerLogs, 3000)
+    }
+  } else if (serverLogTimer) {
+    clearInterval(serverLogTimer)
+    serverLogTimer = null
+  }
+})
+
+const handleDebugHotkey = (event: KeyboardEvent) => {
+  if (!showAiJudge.value) return
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+    event.preventDefault()
+    isDebugOpen.value = !isDebugOpen.value
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleDebugHotkey)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleDebugHotkey)
+  if (serverLogTimer) {
+    clearInterval(serverLogTimer)
+    serverLogTimer = null
+  }
 })
 
 const detailedGames = {

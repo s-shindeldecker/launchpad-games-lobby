@@ -8,6 +8,7 @@ import {
   type LDAIMetrics,
   type JudgeResponse
 } from '@launchdarkly/server-sdk-ai'
+import { addServerLog } from '../utils/debugLogs'
 
 type AiConfigInput = {
   type: 'prompt' | 'judge'
@@ -26,6 +27,33 @@ type AiContext = {
   plan?: string
   device?: string
   platform?: string
+}
+
+const logInfo = (message: string, meta?: unknown) => {
+  addServerLog('info', message, meta)
+  if (meta === undefined) {
+    console.info(message)
+  } else {
+    console.info(message, meta)
+  }
+}
+
+const logWarn = (message: string, meta?: unknown) => {
+  addServerLog('warn', message, meta)
+  if (meta === undefined) {
+    console.warn(message)
+  } else {
+    console.warn(message, meta)
+  }
+}
+
+const logError = (message: string, meta?: unknown) => {
+  addServerLog('error', message, meta)
+  if (meta === undefined) {
+    console.error(message)
+  } else {
+    console.error(message, meta)
+  }
 }
 
 let ldClient: LDClient | null = null
@@ -268,7 +296,7 @@ const evaluateJudge = async ({
     if (!judgeConfig.enabled || !judgeConfig.model?.name) return undefined
     const judgeProviderName = resolveProviderName(judgeConfig.provider?.name)
     if (judgeProviderName === 'unknown') {
-      console.warn('[AI Config] Judge provider unsupported', {
+      logWarn('[AI Config] Judge provider unsupported', {
         providerName: judgeConfig.provider?.name
       })
       return undefined
@@ -313,7 +341,7 @@ const evaluateJudge = async ({
       reasoning: judgeResult.evals[judgeEvalKey]?.reasoning ?? ''
     }
   } catch (judgeError) {
-    console.warn('[AI Config] Judge evaluation failed', {
+    logWarn('[AI Config] Judge evaluation failed', {
       message:
         judgeError instanceof Error ? judgeError.message : String(judgeError)
     })
@@ -370,7 +398,7 @@ export default defineEventHandler(async (event) => {
   try {
     await ensureClients()
     if (!aiClient) {
-      console.error('[AI Config] Clients unavailable')
+      logError('[AI Config] Clients unavailable')
       return { error: 'config_unavailable' }
     }
 
@@ -385,7 +413,7 @@ export default defineEventHandler(async (event) => {
     const judgeThreshold = 0.6
     const configKey = type === 'prompt' ? promptKey : judgeKey
     const ctx = buildContext(body.context)
-    console.info('[AI Config] Request received', {
+    logInfo('[AI Config] Request received', {
       type,
       configKey,
       contextKey: ctx.key
@@ -399,16 +427,16 @@ export default defineEventHandler(async (event) => {
     )
 
     if (!aiConfig.enabled) {
-      console.warn('[AI Config] Config disabled', { configKey })
+      logWarn('[AI Config] Config disabled', { configKey })
       return { error: 'config_disabled' }
     }
 
     if (!aiConfig.model?.name) {
-      console.error('[AI Config] Model unavailable', { configKey })
+      logError('[AI Config] Model unavailable', { configKey })
       return { error: 'model_unavailable' }
     }
 
-    console.info('[AI Config] Config details', {
+    logInfo('[AI Config] Config details', {
       configKey,
       modelName: aiConfig.model?.name,
       hasMessages: Boolean(aiConfig.messages?.length),
@@ -431,16 +459,16 @@ export default defineEventHandler(async (event) => {
 
     const providerName = resolveProviderName(aiConfig.provider?.name)
     if (providerName === 'unknown') {
-      console.error('[AI Config] Provider unsupported', {
+      logError('[AI Config] Provider unsupported', {
         providerName: aiConfig.provider?.name
       })
       return { error: 'provider_unavailable' }
     }
-    console.info('[AI Config] Provider selected', {
+    logInfo('[AI Config] Provider selected', {
       configKey,
       providerName
     })
-    console.info('[AI Config] Metrics tracker available', {
+    logInfo('[AI Config] Metrics tracker available', {
       available: Boolean(aiConfig.tracker?.trackMetricsOf)
     })
 
@@ -452,9 +480,9 @@ export default defineEventHandler(async (event) => {
     if (ldClient) {
       try {
         await ldClient.flush()
-        console.info('[AI Config] LaunchDarkly flush complete')
+        logInfo('[AI Config] LaunchDarkly flush complete')
       } catch (flushError) {
-        console.error('[AI Config] LaunchDarkly flush failed', {
+        logError('[AI Config] LaunchDarkly flush failed', {
           message:
             flushError instanceof Error ? flushError.message : String(flushError)
         })
@@ -463,10 +491,10 @@ export default defineEventHandler(async (event) => {
 
     const content = completion.content
     if (!content) {
-      console.error('[AI Config] Empty model response', { configKey })
+      logError('[AI Config] Empty model response', { configKey })
       return { error: type === 'prompt' ? 'invalid_prompt' : 'invalid_judge' }
     }
-    console.info('[AI Config] Model response received', {
+    logInfo('[AI Config] Model response received', {
       configKey,
       responsePreview: content.slice(0, 200)
     })
@@ -490,7 +518,7 @@ export default defineEventHandler(async (event) => {
         typeof promptJudge.score === 'number' &&
         promptJudge.score < judgeThreshold
       ) {
-        console.info('[AI Config] Prompt fallback triggered', {
+        logInfo('[AI Config] Prompt fallback triggered', {
           configKey,
           judgeScore: promptJudge.score
         })
@@ -558,7 +586,7 @@ export default defineEventHandler(async (event) => {
         typeof judgeDisplay.score === 'number' &&
         judgeDisplay.score < judgeThreshold
       ) {
-        console.info('[AI Config] Judge fallback triggered', {
+        logInfo('[AI Config] Judge fallback triggered', {
           configKey,
           judgeScore: judgeDisplay.score
         })
@@ -592,7 +620,7 @@ export default defineEventHandler(async (event) => {
       return { verdict: content, meta }
     }
   } catch (error) {
-    console.error('[AI Config] Execution failed', {
+    logError('[AI Config] Execution failed', {
       type,
       message: error instanceof Error ? error.message : String(error)
     })
