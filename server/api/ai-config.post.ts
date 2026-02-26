@@ -380,6 +380,9 @@ export default defineEventHandler(async (event) => {
       process.env.LD_AI_CONFIG_JUDGE_KEY ?? 'talkin-ship-judge'
     const judgeEvalKey =
       process.env.LD_AI_CONFIG_JUDGE_EVAL_KEY ?? 'brand-accuracy'
+    const promptFallbackKey = 'fallback-brand-prompt-config'
+    const judgeFallbackKey = 'fallback-brand-scoring-config'
+    const judgeThreshold = 0.6
     const configKey = type === 'prompt' ? promptKey : judgeKey
     const ctx = buildContext(body.context)
     console.info('[AI Config] Request received', {
@@ -471,14 +474,67 @@ export default defineEventHandler(async (event) => {
     const meta = completion.meta
 
     if (type === 'prompt') {
-      const promptJudge = await evaluateJudge({
+      let promptJudge = await evaluateJudge({
         promptValue: content,
         responseValue: content,
         ctx,
         judgeEvalKey,
         aiClient
       })
-      return { prompt: content, meta, judge: promptJudge }
+      let finalPrompt = content
+      let finalMeta = meta
+      let promptFallbackUsed = false
+
+      if (
+        promptJudge &&
+        typeof promptJudge.score === 'number' &&
+        promptJudge.score < judgeThreshold
+      ) {
+        console.info('[AI Config] Prompt fallback triggered', {
+          configKey,
+          judgeScore: promptJudge.score
+        })
+        const fallbackConfig = await aiClient.completionConfig(
+          promptFallbackKey,
+          ctx,
+          {},
+          body.input ?? {}
+        )
+        if (fallbackConfig.enabled && fallbackConfig.model?.name) {
+          const fallbackProviderName = resolveProviderName(
+            fallbackConfig.provider?.name
+          )
+          if (fallbackProviderName !== 'unknown') {
+            const fallbackMessages = fallbackConfig.messages
+              ? [...fallbackConfig.messages]
+              : []
+            const fallbackCompletion = await invokeProviderCompletion({
+              aiConfig: fallbackConfig,
+              messages: fallbackMessages,
+              providerName: fallbackProviderName
+            })
+            if (fallbackCompletion.content) {
+              finalPrompt = fallbackCompletion.content
+              finalMeta = fallbackCompletion.meta
+              promptFallbackUsed = true
+              promptJudge = await evaluateJudge({
+                promptValue: finalPrompt,
+                responseValue: finalPrompt,
+                ctx,
+                judgeEvalKey,
+                aiClient
+              })
+            }
+          }
+        }
+      }
+
+      return {
+        prompt: finalPrompt,
+        meta: finalMeta,
+        judge: promptJudge,
+        fallback: promptFallbackUsed ? { prompt: true } : undefined
+      }
     }
 
     try {
@@ -488,21 +544,50 @@ export default defineEventHandler(async (event) => {
         typeof body.input?.prompt === 'string' ? body.input.prompt : ''
       const responseValue =
         typeof body.input?.response === 'string' ? body.input.response : ''
-      const judgeDisplay = await evaluateJudge({
+      let judgeDisplay = await evaluateJudge({
         promptValue,
         responseValue,
         ctx,
         judgeEvalKey,
         aiClient
       })
+      let judgeFallbackUsed = false
+
+      if (
+        judgeDisplay &&
+        typeof judgeDisplay.score === 'number' &&
+        judgeDisplay.score < judgeThreshold
+      ) {
+        console.info('[AI Config] Judge fallback triggered', {
+          configKey,
+          judgeScore: judgeDisplay.score
+        })
+        const fallbackJudge = await evaluateJudge({
+          promptValue,
+          responseValue,
+          ctx,
+          judgeEvalKey: judgeFallbackKey,
+          aiClient
+        })
+        if (fallbackJudge) {
+          judgeDisplay = fallbackJudge
+          judgeFallbackUsed = true
+        }
+      }
 
       return judge
         ? {
             ...judge,
             meta,
-            judge: judgeDisplay
+            judge: judgeDisplay,
+            fallback: judgeFallbackUsed ? { judge: true } : undefined
           }
-        : { verdict: content, meta, judge: judgeDisplay }
+        : {
+            verdict: content,
+            meta,
+            judge: judgeDisplay,
+            fallback: judgeFallbackUsed ? { judge: true } : undefined
+          }
     } catch {
       return { verdict: content, meta }
     }

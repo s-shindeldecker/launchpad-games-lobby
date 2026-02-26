@@ -210,6 +210,22 @@
             <p class="font-game text-xs uppercase tracking-wider text-amber-300">
               Judge Results (Brand Accuracy)
             </p>
+            <div
+              v-if="promptFallbackUsed || responseFallbackUsed"
+              class="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-[11px] text-amber-100"
+            >
+              <p class="uppercase tracking-wider text-amber-200">
+                Fallback activated
+              </p>
+              <p class="mt-1 text-amber-100/80">
+                {{ promptFallbackUsed ? 'Prompt fallback applied.' : '' }}
+                {{
+                  responseFallbackUsed
+                    ? 'Response judge fallback applied.'
+                    : ''
+                }}
+              </p>
+            </div>
             <div class="mt-3 space-y-3 text-sm text-slate-200">
               <div v-if="promptJudge">
                 <p class="text-xs text-amber-200/90">Prompt judge</p>
@@ -651,6 +667,8 @@ const verdictColorClass = (score: number) => {
 
 const promptJudge = ref<JudgeDisplay | null>(null)
 const responseJudge = ref<JudgeDisplay | null>(null)
+const promptFallbackUsed = ref(false)
+const responseFallbackUsed = ref(false)
 
 const startRound = async () => {
   errorMessage.value = ''
@@ -658,6 +676,8 @@ const startRound = async () => {
   response.value = ''
   promptJudge.value = null
   responseJudge.value = null
+  promptFallbackUsed.value = false
+  responseFallbackUsed.value = false
   isBusy.value = true
   try {
     const output = await $fetch('/api/ai-config', {
@@ -673,6 +693,14 @@ const startRound = async () => {
       promptJudge.value = normalizeJudgeDisplay(
         (output as { judge?: unknown }).judge
       )
+    }
+    if (output && typeof output === 'object' && 'fallback' in output) {
+      const fallback = (output as { fallback?: unknown }).fallback
+      if (fallback && typeof fallback === 'object') {
+        promptFallbackUsed.value = Boolean(
+          (fallback as { prompt?: unknown }).prompt
+        )
+      }
     }
     prompt.value =
       nextPrompt || fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)]
@@ -700,6 +728,14 @@ const submitResponse = async () => {
     const normalized = normalizeJudge(output)
     result.value = normalized
     responseJudge.value = normalized.judge ?? null
+    if (output && typeof output === 'object' && 'fallback' in output) {
+      const fallback = (output as { fallback?: unknown }).fallback
+      if (fallback && typeof fallback === 'object') {
+        responseFallbackUsed.value = Boolean(
+          (fallback as { judge?: unknown }).judge
+        )
+      }
+    }
   } catch {
     result.value = fallbackJudge
     errorMessage.value = 'Judge unavailable. Showing a fallback verdict.'
