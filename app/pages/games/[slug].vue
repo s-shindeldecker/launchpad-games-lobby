@@ -61,9 +61,19 @@
           v-if="showAiJudge"
           class="font-gameBody mt-8 rounded-3xl border-2 border-amber-400/60 bg-slate-900/80 p-6 shadow-xl shadow-amber-500/10"
         >
-          <p class="font-game text-sm uppercase tracking-wider text-amber-300">
-            Talkin’ Ship (AI Judge Edition)
-          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <p class="font-game text-sm uppercase tracking-wider text-amber-300">
+              Talkin’ Ship (AI Judge Edition)
+            </p>
+            <span
+              v-if="showJudgeResults"
+              class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/15 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-amber-200"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span>
+              Judge View
+              <span class="text-amber-200/50">(⌘J)</span>
+            </span>
+          </div>
           <h2 class="font-game mt-3 text-xl text-white drop-shadow-sm">
             Try a ship‑pun challenge
           </h2>
@@ -72,25 +82,59 @@
             score it.
           </p>
 
-          <div
-            class="relative mt-5 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-amber-950/30 p-4 shadow-inner"
-          >
+          <div class="mt-5 flex flex-col gap-4 lg:flex-row">
             <div
-              v-if="isBusy"
-              class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
-            ></div>
-            <p class="font-game text-xs uppercase tracking-wider text-amber-300">
-              Challenge
-            </p>
-            <p
-              v-if="prompt"
-              class="mt-2 text-base font-medium leading-snug text-amber-100"
+              :class="[
+                'relative flex-1 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-amber-950/30 p-4 shadow-inner',
+                showJudgeResults && promptJudges.length ? '' : 'lg:flex-[1_1_100%]'
+              ]"
             >
-              {{ prompt }}
-            </p>
-            <p v-else class="mt-2 text-sm text-amber-200/70">
-              Click "Start Round" to get a prompt.
-            </p>
+              <div
+                v-if="isBusy"
+                class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+              ></div>
+              <p class="font-game text-xs uppercase tracking-wider text-amber-300">
+                Challenge
+              </p>
+              <p
+                v-if="prompt"
+                class="mt-2 text-base font-medium leading-snug text-amber-100"
+              >
+                {{ prompt }}
+              </p>
+              <p v-else class="mt-2 text-sm text-amber-200/70">
+                Click "Start Round" to get a prompt.
+              </p>
+            </div>
+            <div
+              v-if="showJudgeResults && promptJudges.length"
+              class="flex flex-1 flex-col gap-3 lg:max-w-xs"
+            >
+              <div
+                v-for="judge in promptJudges"
+                :key="judge.metricKey"
+                class="rounded-2xl border-2 border-amber-400/30 bg-white/5 p-4 transition-all"
+              >
+                <p class="font-game text-xs uppercase tracking-wider text-amber-300">
+                  {{ judge.metricKey }}
+                </p>
+                <p class="mt-2 text-sm font-medium text-amber-100">
+                  Score: {{ formatJudgeScore(judge.score) }}
+                </p>
+                <p
+                  v-if="judge.reasoning"
+                  class="mt-2 text-xs leading-relaxed text-slate-400"
+                >
+                  {{ judge.reasoning }}
+                </p>
+              </div>
+              <div
+                v-if="promptFallbackUsed"
+                class="rounded-lg border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-[10px] text-amber-100"
+              >
+                Prompt fallback applied.
+              </div>
+            </div>
           </div>
 
           <div class="mt-4">
@@ -103,7 +147,7 @@
             ></textarea>
           </div>
 
-          <div class="mt-4 flex flex-wrap gap-3">
+          <div class="mt-4 flex flex-wrap items-center gap-3">
             <button
               class="rounded-full border-2 border-amber-400/60 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20 hover:border-amber-400/80 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="isBusy"
@@ -117,6 +161,24 @@
               @click="submitResponse"
             >
               Submit Response
+            </button>
+            <button
+              v-if="hasAnyJudgeResults"
+              :class="[
+                'ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition',
+                showJudgeResults
+                  ? 'border-amber-400/60 bg-amber-400/15 text-amber-200 hover:bg-amber-400/25'
+                  : 'border-white/15 text-slate-400 hover:border-amber-400/40 hover:text-amber-200'
+              ]"
+              @click="showJudgeResults = !showJudgeResults"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5">
+                <path v-if="showJudgeResults" d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                <path v-if="showJudgeResults" fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+                <path v-if="!showJudgeResults" fill-rule="evenodd" d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.092 1.092a4 4 0 0 0-5.558-5.558Z" clip-rule="evenodd" />
+                <path v-if="!showJudgeResults" d="M10.748 13.93 8.016 11.2A2.501 2.501 0 0 0 10.748 13.93ZM7.4 12.658l-3.535-3.535A10.047 10.047 0 0 0 .663 10.598a1.651 1.651 0 0 0 0 1.186A10.004 10.004 0 0 0 10 17c.9 0 1.778-.119 2.612-.34L7.4 12.66Z" />
+              </svg>
+              {{ showJudgeResults ? 'Hide' : 'Show' }} Judges
             </button>
           </div>
           <div
@@ -138,118 +200,105 @@
           </p>
 
           <div
-            v-if="result"
-            class="relative mt-5 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
+            v-if="result || isBusy"
+            class="mt-5 flex flex-col gap-4 lg:flex-row"
           >
             <div
-              v-if="isBusy"
-              class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
-            ></div>
-            <div class="flex flex-wrap items-center gap-3">
-              <span
-                class="rounded-full border border-amber-300/60 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-wider text-amber-200"
-              >
-                Score
-              </span>
-              <span
-                class="font-game text-3xl font-semibold text-amber-100 drop-shadow-sm"
-              >
-                {{ result.score }}
-              </span>
-            </div>
-            <p
-              class="mt-2 text-base font-medium"
-              :class="verdictColorClass(result.score)"
+              v-if="result"
+              :class="[
+                'relative flex-1 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner',
+                showJudgeResults && responseJudges.length ? '' : 'lg:flex-[1_1_100%]'
+              ]"
             >
-              {{ result.verdict }}
-            </p>
-            <p v-if="result.comment" class="mt-2 text-sm text-slate-300">
-              {{ result.comment }}
-            </p>
-            <div
-              v-if="result.meta"
-              class="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500"
-            >
-              <span v-if="result.meta.stopReason">
-                Stop: {{ result.meta.stopReason }}
-              </span>
-              <span v-if="result.meta.usage">
-                Tokens: {{ formatUsage(result.meta.usage) }}
-              </span>
-            </div>
-          </div>
-          <div
-            v-else-if="isBusy"
-            class="relative mt-5 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
-          >
-            <div
-              class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
-            ></div>
-            <div class="flex flex-wrap items-center gap-3">
-              <span
-                class="rounded-full border border-amber-300/60 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-wider text-amber-200"
+              <div
+                v-if="isBusy"
+                class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+              ></div>
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  class="rounded-full border border-amber-300/60 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-wider text-amber-200"
+                >
+                  Score
+                </span>
+                <span
+                  class="font-game text-3xl font-semibold text-amber-100 drop-shadow-sm"
+                >
+                  {{ result.score }}
+                </span>
+              </div>
+              <p
+                class="mt-2 text-base font-medium"
+                :class="verdictColorClass(result.score)"
               >
-                Score
-              </span>
-              <span class="font-game text-3xl font-semibold text-amber-100">
-                —
-              </span>
-              <span class="text-xs uppercase tracking-wider text-amber-300">
-                Loading
-              </span>
-            </div>
-            <div class="mt-3 space-y-2">
-              <div class="h-3 w-3/4 rounded-full bg-amber-200/20"></div>
-              <div class="h-3 w-2/3 rounded-full bg-amber-200/10"></div>
-            </div>
-          </div>
-          <div
-            v-if="promptJudge || responseJudge"
-            class="mt-5 rounded-2xl border-2 border-amber-400/30 bg-white/5 p-4"
-          >
-            <p class="font-game text-xs uppercase tracking-wider text-amber-300">
-              Judge Results (Brand Accuracy)
-            </p>
-            <div
-              v-if="promptFallbackUsed || responseFallbackUsed"
-              class="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-[11px] text-amber-100"
-            >
-              <p class="uppercase tracking-wider text-amber-200">
-                Fallback activated
+                {{ result.verdict }}
               </p>
-              <p class="mt-1 text-amber-100/80">
-                {{ promptFallbackUsed ? 'Prompt fallback applied.' : '' }}
-                {{
-                  responseFallbackUsed
-                    ? 'Response judge fallback applied.'
-                    : ''
-                }}
+              <p v-if="result.comment" class="mt-2 text-sm text-slate-300">
+                {{ result.comment }}
               </p>
+              <div
+                v-if="result.meta"
+                class="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500"
+              >
+                <span v-if="result.meta.stopReason">
+                  Stop: {{ result.meta.stopReason }}
+                </span>
+                <span v-if="result.meta.usage">
+                  Tokens: {{ formatUsage(result.meta.usage) }}
+                </span>
+              </div>
             </div>
-            <div class="mt-3 space-y-3 text-sm text-slate-200">
-              <div v-if="promptJudge">
-                <p class="text-xs text-amber-200/90">Prompt judge</p>
-                <p class="mt-1 text-sm font-medium text-amber-100">
-                  Score: {{ formatJudgeScore(promptJudge.score) }}
+            <div
+              v-else-if="isBusy"
+              class="relative flex-1 overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-slate-950/70 p-4 shadow-inner"
+            >
+              <div
+                class="pointer-events-none absolute inset-0 animate-pulse bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+              ></div>
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  class="rounded-full border border-amber-300/60 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-wider text-amber-200"
+                >
+                  Score
+                </span>
+                <span class="font-game text-3xl font-semibold text-amber-100">
+                  —
+                </span>
+                <span class="text-xs uppercase tracking-wider text-amber-300">
+                  Loading
+                </span>
+              </div>
+              <div class="mt-3 space-y-2">
+                <div class="h-3 w-3/4 rounded-full bg-amber-200/20"></div>
+                <div class="h-3 w-2/3 rounded-full bg-amber-200/10"></div>
+              </div>
+            </div>
+            <div
+              v-if="showJudgeResults && responseJudges.length"
+              class="flex flex-1 flex-col gap-3 lg:max-w-xs"
+            >
+              <div
+                v-for="judge in responseJudges"
+                :key="judge.metricKey"
+                class="rounded-2xl border-2 border-amber-400/30 bg-white/5 p-4 transition-all"
+              >
+                <p class="font-game text-xs uppercase tracking-wider text-amber-300">
+                  {{ judge.metricKey }}
+                </p>
+                <p class="mt-2 text-sm font-medium text-amber-100">
+                  Score: {{ formatJudgeScore(judge.score) }}
                 </p>
                 <p
-                  v-if="promptJudge.reasoning"
-                  class="mt-1 text-xs text-slate-400"
+                  v-if="judge.reasoning"
+                  class="mt-2 text-xs leading-relaxed text-slate-400"
                 >
-                  {{ promptJudge.reasoning }}
+                  {{ judge.reasoning }}
                 </p>
               </div>
-              <div v-if="responseJudge">
-                <p class="text-xs text-amber-200/90">Response judge</p>
-                <p class="mt-1 text-sm font-medium text-amber-100">
-                  Score: {{ formatJudgeScore(responseJudge.score) }}
-                </p>
-                <p
-                  v-if="responseJudge.reasoning"
-                  class="mt-1 text-xs text-slate-400"
-                >
-                  {{ responseJudge.reasoning }}
-                </p>
+              <div
+                v-if="responseFallbackUsed"
+                class="rounded-lg border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-[10px] text-amber-100"
+              >
+                Response judge fallback applied.
               </div>
             </div>
           </div>
@@ -411,6 +460,7 @@ const result = ref<
 const isBusy = ref(false)
 const errorMessage = ref('')
 const isDebugOpen = ref(false)
+const showJudgeResults = ref(false)
 
 type DebugLogEntry = {
   ts: string
@@ -506,6 +556,10 @@ const handleDebugHotkey = (event: KeyboardEvent) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
     event.preventDefault()
     isDebugOpen.value = !isDebugOpen.value
+  }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
+    event.preventDefault()
+    showJudgeResults.value = !showJudgeResults.value
   }
 }
 
@@ -790,17 +844,30 @@ const verdictColorClass = (score: number) => {
   return 'text-amber-100'
 }
 
-const promptJudge = ref<JudgeDisplay | null>(null)
-const responseJudge = ref<JudgeDisplay | null>(null)
+const promptJudges = ref<JudgeDisplay[]>([])
+const responseJudges = ref<JudgeDisplay[]>([])
 const promptFallbackUsed = ref(false)
 const responseFallbackUsed = ref(false)
+
+const hasAnyJudgeResults = computed(
+  () => promptJudges.value.length > 0 || responseJudges.value.length > 0
+)
+
+const collectJudges = (source: unknown): JudgeDisplay[] => {
+  if (!source || typeof source !== 'object') return []
+  if (Array.isArray(source)) {
+    return source.map(normalizeJudgeDisplay).filter((j): j is JudgeDisplay => j !== null)
+  }
+  const single = normalizeJudgeDisplay(source)
+  return single ? [single] : []
+}
 
 const startRound = async () => {
   errorMessage.value = ''
   result.value = null
   response.value = ''
-  promptJudge.value = null
-  responseJudge.value = null
+  promptJudges.value = []
+  responseJudges.value = []
   promptFallbackUsed.value = false
   responseFallbackUsed.value = false
   isBusy.value = true
@@ -814,10 +881,9 @@ const startRound = async () => {
       }
     })
     const nextPrompt = normalizePrompt(output)
-    if (output && typeof output === 'object' && 'judge' in output) {
-      promptJudge.value = normalizeJudgeDisplay(
-        (output as { judge?: unknown }).judge
-      )
+    if (output && typeof output === 'object') {
+      const obj = output as { judge?: unknown; judges?: unknown }
+      promptJudges.value = collectJudges(obj.judges ?? obj.judge)
     }
     if (output && typeof output === 'object' && 'fallback' in output) {
       const fallback = (output as { fallback?: unknown }).fallback
@@ -852,7 +918,14 @@ const submitResponse = async () => {
     })
     const normalized = normalizeJudge(output)
     result.value = normalized
-    responseJudge.value = normalized.judge ?? null
+    if (output && typeof output === 'object') {
+      const obj = output as { judges?: unknown }
+      if (obj.judges) {
+        responseJudges.value = collectJudges(obj.judges)
+      } else {
+        responseJudges.value = normalized.judge ? [normalized.judge] : []
+      }
+    }
     if (output && typeof output === 'object' && 'fallback' in output) {
       const fallback = (output as { fallback?: unknown }).fallback
       if (fallback && typeof fallback === 'object') {
