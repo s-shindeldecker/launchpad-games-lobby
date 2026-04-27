@@ -1,6 +1,8 @@
 import { initialize } from 'launchdarkly-js-client-sdk'
 import { ref } from 'vue'
 
+import { amplitudeSetUserId } from '~/utils/amplitudeClient'
+
 const LD_USER_KEY_STORAGE = 'ld-user-key'
 const LD_ANON_KEY_STORAGE = 'ld-anon-key'
 
@@ -137,9 +139,10 @@ export default defineNuxtPlugin(async () => {
   const context = ref(buildUserContext())
 
   // Client-only initialization; keeps flags ready for composables.
-  ldClient = initialize(clientId, context.value)
+  ldClient = initialize(clientId, context.value, { evaluationReasons: true })
   await ldClient.waitForInitialization()
   isReady.value = true
+  amplitudeSetUserId(context.value.key as string)
   if (import.meta.dev) {
     console.info('[LaunchDarkly] Client initialized', { key: context.value.key })
   }
@@ -155,6 +158,7 @@ export default defineNuxtPlugin(async () => {
           if (!ldClient) return
           await ldClient.identify(nextContext)
           context.value = nextContext
+          amplitudeSetUserId(nextContext.key as string)
         }
       }
     }

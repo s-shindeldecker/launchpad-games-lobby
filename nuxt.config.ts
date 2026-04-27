@@ -7,7 +7,8 @@ export default defineNuxtConfig({
   css: ['~/assets/css/tailwind.css'],
   runtimeConfig: {
     public: {
-      ldClientId: process.env.NUXT_PUBLIC_LD_CLIENT_ID
+      ldClientId: process.env.NUXT_PUBLIC_LD_CLIENT_ID,
+      amplitudeApiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY
     }
   },
   app: {

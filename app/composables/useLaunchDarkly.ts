@@ -1,5 +1,7 @@
 import { computed, ref } from 'vue'
 
+import { recordFlagEvaluation } from '~/utils/ldFlagEvaluations'
+
 let hasListener = false
 const flagsVersion = ref(0)
 
@@ -13,7 +15,12 @@ export const useLaunchDarkly = () => {
     flagsVersion.value
     const client = $launchDarkly?.client
     if (!client) return defaultValue
-    return client.variation(flagKey, defaultValue)
+    const detail = client.variationDetail(
+      flagKey,
+      defaultValue as Parameters<typeof client.variationDetail>[1]
+    )
+    recordFlagEvaluation(flagKey, detail)
+    return detail.value as T
   }
 
   if (!hasListener && $launchDarkly?.client) {

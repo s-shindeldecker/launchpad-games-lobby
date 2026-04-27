@@ -9,7 +9,12 @@
         />
         <div class="absolute inset-0 flex items-end">
           <div class="p-6 sm:p-8">
-            <NuxtLink :to="cta.href" :class="ctaClasses" :style="ctaStyle">
+            <NuxtLink
+              :to="cta.href"
+              :class="ctaClasses"
+              :style="ctaStyle"
+              @click="onHomeHeroCtaClick"
+            >
               {{ cta.text }}
             </NuxtLink>
           </div>
@@ -22,6 +27,7 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
+import { trackEvent } from '~/utils/analytics'
 
 type CtaConfig = {
   text: string
@@ -68,6 +74,15 @@ watchEffect(() => {
 })
 
 const cta = computed(() => ctaConfig.value)
+
+const onHomeHeroCtaClick = () => {
+  trackEvent('home_hero_cta_click', {
+    href: cta.value.href,
+    text: cta.value.text,
+    size: cta.value.size,
+    color: cta.value.color
+  })
+}
 
 const sizeClasses: Record<CtaConfig['size'], string> = {
   sm: 'px-4 py-2 text-sm',

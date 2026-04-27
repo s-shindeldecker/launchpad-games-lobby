@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "^2.31.3",
     "@aws-sdk/client-bedrock-runtime": "^3.985.0",
     "@launchdarkly/node-server-sdk": "^9.10.6",
     "@launchdarkly/server-sdk-ai": "^0.16.1",
