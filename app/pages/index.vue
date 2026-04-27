@@ -70,6 +70,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vu
 import { useCart } from '~/composables/useCart'
 import { useLaunchDarkly } from '~/composables/useLaunchDarkly'
 import { trackEvent } from '~/utils/analytics'
+import { clearLdFlagEvaluations } from '~/utils/ldFlagEvaluations'
 
 const SIM_GAMES = [
   { slug: 'talkin-ship', name: "Talkin' Ship" },
@@ -191,6 +192,11 @@ const runHomeSimulationLoop = async () => {
       $launchDarkly?.createUserContext
     ) {
       await $launchDarkly.setContext($launchDarkly.createUserContext(true))
+      // Ensure this user's flags are evaluated before custom events (LD
+      // records variationDetail; Amplitude snapshot matches this context).
+      clearLdFlagEvaluations()
+      const heroCta = getFlagValue('home-hero-cta', defaultCta)
+      ctaConfig.value = normalizeCtaConfig(heroCta)
       await nextTick()
       if (Math.random() < 0.5) {
         trackEvent('home_hero_cta_click', {
@@ -202,6 +208,10 @@ const runHomeSimulationLoop = async () => {
         })
       }
       await maybeSimulateCartSession()
+      const ldClient = $launchDarkly.client
+      if (ldClient && typeof ldClient.flush === 'function') {
+        await ldClient.flush()
+      }
     }
     await sleep(60)
   }

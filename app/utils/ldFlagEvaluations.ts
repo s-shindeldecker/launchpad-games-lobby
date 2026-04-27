@@ -9,6 +9,17 @@ export type LdStoredFlagEvaluation = {
 
 const evaluations: Record<string, LdStoredFlagEvaluation> = {}
 
+/** Drop cached evaluations (e.g. after LD identify with a new user). */
+export const clearLdFlagEvaluations = () => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+    debounceTimer = null
+  }
+  for (const key of Object.keys(evaluations)) {
+    delete evaluations[key]
+  }
+}
+
 const sanitizeFlagKeyForProp = (flagKey: string) =>
   flagKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 72)
 
