@@ -9,7 +9,9 @@ from __future__ import annotations
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv(Path(__file__).parent.parent / ".env")
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 import json
 import os
