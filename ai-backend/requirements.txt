@@ -6,3 +6,4 @@ launchdarkly-server-sdk==9.15.1
 launchdarkly-server-sdk-ai==1.0.1
 launchdarkly-server-sdk-ai-openai==0.7.0
 pydantic==2.13.4
+mangum>=0.17.0
