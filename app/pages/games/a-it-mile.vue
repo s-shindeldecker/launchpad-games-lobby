@@ -108,8 +108,8 @@
                 <p class="font-game text-xs uppercase tracking-wider text-violet-300">
                   AI opening bars
                 </p>
-                <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-violet-100/95">
-                  {{ aiBars }}
+                <p class="mt-2 text-sm leading-relaxed text-violet-100/95">
+                  <span v-html="normalizeLineBreaks(aiBars)"></span>
                 </p>
               </div>
               <div
@@ -138,7 +138,7 @@
                   v-if="judge.reasoning"
                   class="mt-2 text-xs leading-relaxed text-slate-400"
                 >
-                  {{ judge.reasoning }}
+                  <span v-html="normalizeLineBreaks(judge.reasoning)"></span>
                 </p>
               </div>
             </div>
@@ -244,10 +244,9 @@
                 <p class="font-game text-xs uppercase tracking-wider text-violet-300">
                   AI comeback
                 </p>
-                <p
-                  class="mt-2 text-sm leading-relaxed text-slate-300"
-                  v-html="formatCommentHtml(result.comment)"
-                ></p>
+                <p class="mt-2 text-sm leading-relaxed text-slate-300">
+                  <span v-html="normalizeLineBreaks(result.comment)"></span>
+                </p>
               </div>
               <div
                 v-if="result.meta?.usage"
@@ -300,7 +299,7 @@
                   v-if="judge.reasoning"
                   class="mt-2 text-xs leading-relaxed text-slate-400"
                 >
-                  {{ judge.reasoning }}
+                  <span v-html="normalizeLineBreaks(judge.reasoning)"></span>
                 </p>
               </div>
             </div>
@@ -430,6 +429,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { trackEvent } from '~/utils/analytics'
 import { useCart } from '~/composables/useCart'
+
+const normalizeLineBreaks = (text: string | undefined | null) =>
+  text?.replace(/\\n/g, '\n').replace(/\n/g, '<br>') ?? ''
 
 const game = {
   name: 'AI-t Mile',
@@ -658,15 +660,6 @@ const scoreColorClass = (score: number) => {
   if (score >= 50) return 'text-amber-200'
   return 'text-amber-100'
 }
-
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-
-const formatCommentHtml = (comment: string) => escapeHtml(comment).replace(/\n/g, '<br>')
 
 const startRound = async () => {
   errorMessage.value = ''
