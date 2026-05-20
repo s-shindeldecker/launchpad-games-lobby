@@ -8,7 +8,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       ldClientId: process.env.NUXT_PUBLIC_LD_CLIENT_ID,
-      amplitudeApiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY
+      amplitudeApiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY,
+      aiBackendUrl:
+        process.env.NUXT_PUBLIC_AI_BACKEND_URL ?? 'http://localhost:8000'
     }
   },
   app: {

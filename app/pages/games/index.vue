@@ -250,6 +250,17 @@ const games = [
     image: '/images/talkin-ship.png'
   },
   {
+    slug: 'a-it-mile',
+    name: 'AI-t Mile',
+    tagline: 'Think you can out-rap an AI? Drop your bars and find out.',
+    pack: 'Party Game Collection',
+    players: '3-8 players',
+    badges: ['Hip-hop', 'Rap', 'AI'],
+    platforms: ['Steam', 'Switch', 'PS5', 'Xbox'],
+    detailed: true,
+    image: '/images/blastbeat-battle.png'
+  },
+  {
     slug: 'tavern-games',
     name: 'Tavern Games',
     tagline:
