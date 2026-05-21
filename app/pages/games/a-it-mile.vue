@@ -214,7 +214,34 @@
                 showJudgeResults && responseJudges.length ? '' : 'lg:flex-[1_1_100%]'
               ]"
             >
-              <div class="flex flex-wrap items-center gap-3">
+              <div
+                v-if="typeof result.aiScore === 'number'"
+                class="grid max-w-xs grid-cols-2 gap-8 text-center"
+              >
+                <div>
+                  <p class="font-game text-xs uppercase tracking-wider text-violet-300">
+                    You
+                  </p>
+                  <p
+                    class="font-game mt-1 text-3xl font-semibold drop-shadow-sm"
+                    :class="scoreColorClass(result.score)"
+                  >
+                    {{ result.score }}
+                  </p>
+                </div>
+                <div>
+                  <p class="font-game text-xs uppercase tracking-wider text-violet-300">
+                    AI
+                  </p>
+                  <p
+                    class="font-game mt-1 text-3xl font-semibold drop-shadow-sm"
+                    :class="scoreColorClass(result.aiScore)"
+                  >
+                    {{ result.aiScore }}
+                  </p>
+                </div>
+              </div>
+              <div v-else class="flex flex-wrap items-center gap-3">
                 <span
                   class="rounded-full border border-violet-300/60 bg-violet-300/10 px-3 py-1 text-xs uppercase tracking-wider text-violet-200"
                 >
@@ -486,6 +513,7 @@ type JudgeDisplay = {
 
 type RoundResult = {
   score: number
+  aiScore?: number
   winner?: string
   verdict: string
   comment?: string
@@ -617,6 +645,7 @@ const normalizeRoundResult = (value: unknown): RoundResult | null => {
   if (!value || typeof value !== 'object') return null
   const payload = value as {
     score?: unknown
+    ai_score?: unknown
     winner?: unknown
     verdict?: unknown
     comment?: unknown
@@ -628,6 +657,8 @@ const normalizeRoundResult = (value: unknown): RoundResult | null => {
   const meta = payload.meta as { usage?: unknown } | undefined
   return {
     score: Math.round(payload.score),
+    aiScore:
+      typeof payload.ai_score === 'number' ? Math.round(payload.ai_score) : undefined,
     winner: typeof payload.winner === 'string' ? payload.winner : undefined,
     verdict: payload.verdict,
     comment: typeof payload.comment === 'string' ? payload.comment : undefined,
@@ -705,6 +736,7 @@ const submitResponse = async () => {
   try {
     const output = await postAiConfig<{
       score?: number
+      ai_score?: number | null
       winner?: string
       verdict?: string
       comment?: string

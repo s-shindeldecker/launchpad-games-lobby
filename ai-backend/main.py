@@ -252,6 +252,7 @@ def extract_ait_score(payload: Any) -> Optional[dict[str, Any]]:
             "winner": payload.get("winner"),
             "verdict": payload.get("verdict"),
             "comment": payload.get("comment"),
+            "ai_score": payload.get("ai_score"),
         }
     nested = payload.get("output") or payload.get("result")
     if isinstance(nested, dict):
