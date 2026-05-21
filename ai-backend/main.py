@@ -566,6 +566,23 @@ def run_brand_accuracy_judge(
         return None
 
 
+def track_ait_mile_winner(
+    context: Context,
+    score_fields: Optional[dict[str, Any]],
+) -> None:
+    if ld_client is None or not score_fields:
+        return
+    winner = score_fields.get("winner")
+    if not isinstance(winner, str):
+        return
+    if winner == "human":
+        ld_client.track("ait-mile-human-win", context, metric_value=1)
+    elif winner == "ai":
+        ld_client.track("ait-mile-ai-win", context, metric_value=1)
+    elif winner == "tie":
+        ld_client.track("ait-mile-tie", context, metric_value=1)
+
+
 def flush_ld() -> None:
     if ld_client is not None:
         try:
@@ -948,6 +965,7 @@ def handle_ait_judge(context: Context, variables: dict[str, Any]) -> dict[str, A
 
     parsed = safe_parse_json(content)
     score_fields = extract_ait_score(parsed)
+    track_ait_mile_winner(context, score_fields)
 
     judge_prompt = extra_user or (
         f"Topic: {topic_value}\nAI bars: {ai_bars_value}\nHuman bars: {response_value}"
@@ -992,6 +1010,7 @@ def handle_ait_judge(context: Context, variables: dict[str, Any]) -> dict[str, A
                 meta = fb_meta
                 parsed = safe_parse_json(content)
                 score_fields = extract_ait_score(parsed)
+                track_ait_mile_winner(context, score_fields)
                 judge_fallback_used = True
                 judge_display = run_brand_accuracy_judge(
                     context,
