@@ -435,8 +435,6 @@ const lastTrackedSlug = ref<string | null>(null)
 const { getFlagValue, isReady } = useLaunchDarkly()
 const pdpLargeImages = ref(false)
 const { addItem, openDrawer } = useCart()
-const aiJudgeEnabled = ref(true)
-const promptTone = ref('playful')
 const prompt = ref('')
 const response = ref('')
 const result = ref<
@@ -477,7 +475,7 @@ let serverLogTimer: ReturnType<typeof setInterval> | null = null
 const isTalkinShip = computed(
   () => route.params.slug === 'talkin-ship'
 )
-const showAiJudge = computed(() => aiJudgeEnabled.value && isTalkinShip.value)
+const showAiJudge = computed(() => isTalkinShip.value)
 
 const fallbackPrompts = [
   'A pirate is interviewing for a corporate job. What’s their ship‑pun answer to “Where do you see yourself in 5 years?”',
@@ -523,8 +521,6 @@ watch(
 watchEffect(() => {
   if (!isReady.value) return
   pdpLargeImages.value = getFlagValue('plp-large-images', pdpLargeImages.value)
-  aiJudgeEnabled.value = getFlagValue('ai-judge-enabled', true)
-  promptTone.value = getFlagValue('ai-prompt-variant', 'playful')
 })
 
 const fetchServerLogs = async () => {
@@ -876,7 +872,7 @@ const startRound = async () => {
       method: 'POST',
       body: {
         type: 'prompt',
-        input: { tone: promptTone.value, length: 'short' },
+        input: { tone: 'playful', length: 'short' },
         context: buildContextPayload()
       }
     })

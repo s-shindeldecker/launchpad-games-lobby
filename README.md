@@ -69,8 +69,6 @@ Client-side flags currently in use:
 | `plp-title` | string | Listing page title copy |
 | `plp-subtitle` | string | Listing page subtitle copy |
 | `home-hero-cta` | JSON | Home hero CTA text, link, size, and color |
-| `ai-judge-enabled` | boolean | Enables the AI judge on the Talkin' Ship game |
-| `ai-prompt-variant` | string | AI prompt tone for Talkin' Ship (e.g. `playful`) |
 
 Server-side, the Nitro routes (Talkin' Ship) and the Python backend (AI-t Mile)
 each resolve LaunchDarkly **AI Configs** — prompts, scoring, and an AI judge —
