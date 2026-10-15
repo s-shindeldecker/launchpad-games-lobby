@@ -109,7 +109,7 @@
                   AI opening bars
                 </p>
                 <p class="mt-2 text-sm leading-relaxed text-violet-100/95">
-                  <span v-html="normalizeLineBreaks(aiBars)"></span>
+                  <span class="whitespace-pre-wrap">{{ normalizeLineBreaks(aiBars) }}</span>
                 </p>
               </div>
               <div
@@ -138,7 +138,7 @@
                   v-if="judge.reasoning"
                   class="mt-2 text-xs leading-relaxed text-slate-400"
                 >
-                  <span v-html="normalizeLineBreaks(judge.reasoning)"></span>
+                  <span class="whitespace-pre-wrap">{{ normalizeLineBreaks(judge.reasoning) }}</span>
                 </p>
               </div>
             </div>
@@ -272,7 +272,7 @@
                   AI comeback
                 </p>
                 <p class="mt-2 text-sm leading-relaxed text-slate-300">
-                  <span v-html="normalizeLineBreaks(result.comment)"></span>
+                  <span class="whitespace-pre-wrap">{{ normalizeLineBreaks(result.comment) }}</span>
                 </p>
               </div>
               <div
@@ -326,7 +326,7 @@
                   v-if="judge.reasoning"
                   class="mt-2 text-xs leading-relaxed text-slate-400"
                 >
-                  <span v-html="normalizeLineBreaks(judge.reasoning)"></span>
+                  <span class="whitespace-pre-wrap">{{ normalizeLineBreaks(judge.reasoning) }}</span>
                 </p>
               </div>
             </div>
@@ -457,8 +457,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { trackEvent } from '~/utils/analytics'
 import { useCart } from '~/composables/useCart'
 
+// Converts literal "\n" sequences (some agents emit them) to real newlines.
+// Render as text inside a whitespace-pre-wrap element; never via v-html.
 const normalizeLineBreaks = (text: string | undefined | null) =>
-  text?.replace(/\\n/g, '\n').replace(/\n/g, '<br>') ?? ''
+  text?.replace(/\\n/g, '\n').trim() ?? ''
 
 const game = {
   name: 'AI-t Mile',
