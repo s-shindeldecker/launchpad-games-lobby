@@ -172,10 +172,11 @@ const simulationProgress = computed(() => {
 const simulationIsRunning = computed(() => simulationInFlight.value > 0)
 const recordPlpFlagEvaluations = () => {
   // Ensure per-user exposure by evaluating PLP flags after identify.
-  getFlagValue('plp-large-images', plpLargeImages.value)
+  const largeImages = getFlagValue('plp-large-images', false)
   getFlagValue('plp-number-of-columns', plpColumns.value)
   getFlagValue('plp-title', plpTitle.value)
   getFlagValue('plp-subtitle', plpSubtitle.value)
+  return largeImages ? 'large' : 'control'
 }
 const plpGridClassMap: Record<number, string> = {
   2: 'xl:grid-cols-2',
@@ -202,38 +203,58 @@ watchEffect(() => {
   plpColumns.value = columns
 })
 
+// Sessions run one at a time against the single shared LD client: each user is
+// identified, evaluated, tracked and flushed before the next identify. Running
+// them concurrently attributes events to the wrong context and overflows the
+// SDK event queue (capacity 100), silently dropping experiment exposures.
+let simulationPending = 0
+let simulationWorkerActive = false
+
+const runSimulationWorker = async () => {
+  if (simulationWorkerActive) return
+  simulationWorkerActive = true
+  try {
+    while (simulationPending > 0) {
+      simulationPending -= 1
+      simulationInFlight.value = 1
+      try {
+        await simulateUserSession({
+          variant: plpVariant.value,
+          games,
+          trackEvent,
+          identifyUser: async () => {
+            if (!$launchDarkly?.setContext || !$launchDarkly?.createUserContext) {
+              return
+            }
+            await $launchDarkly.setContext($launchDarkly.createUserContext(true))
+            return recordPlpFlagEvaluations()
+          }
+        })
+      } catch {
+        // Simulation errors shouldn't impact UI; mark as completed.
+      }
+      try {
+        await $launchDarkly?.client?.flush()
+      } catch {
+        // A failed flush shouldn't stop the batch.
+      }
+      simulationCompleted.value += 1
+    }
+  } finally {
+    simulationInFlight.value = 0
+    simulationWorkerActive = false
+  }
+}
+
 const runSimulationBatch = (count: number) => {
   if (count <= 0) return
   simulationTotal.value += count
+  simulationPending += count
   console.info('[SIMULATION] Starting batch', {
     count,
     variant: plpVariant.value
   })
-  for (let i = 0; i < count; i += 1) {
-    const stagger = Math.floor(Math.random() * 200)
-    setTimeout(() => {
-      simulationInFlight.value += 1
-      simulateUserSession({
-        variant: plpVariant.value,
-        games,
-        trackEvent,
-        identifyUser: async () => {
-          if (!$launchDarkly?.setContext || !$launchDarkly?.createUserContext) {
-            return
-          }
-          await $launchDarkly.setContext($launchDarkly.createUserContext(true))
-          recordPlpFlagEvaluations()
-        }
-      })
-        .catch(() => {
-          // Simulation errors shouldn't impact UI; mark as completed.
-        })
-        .finally(() => {
-          simulationInFlight.value = Math.max(0, simulationInFlight.value - 1)
-          simulationCompleted.value += 1
-        })
-    }, i * 40 + stagger)
-  }
+  void runSimulationWorker()
 }
 
 const games = [
