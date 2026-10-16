@@ -12,7 +12,11 @@ type SimulationInput = {
     payload?: Record<string, unknown>,
     numericValue?: number
   ) => void
-  identifyUser?: () => Promise<void> | void
+  // May return the new user's own variant, which overrides `variant`.
+  identifyUser?: () =>
+    | Promise<SimulationVariant | void>
+    | SimulationVariant
+    | void
 }
 
 const sleep = (ms: number) =>
@@ -46,13 +50,14 @@ export const simulateUserSession = async ({
     return
   }
 
+  let resolvedVariant = variant
   if (identifyUser) {
-    await identifyUser()
+    resolvedVariant = (await identifyUser()) ?? variant
   }
 
-  const engagementRate = pickEngagementRate(variant)
+  const engagementRate = pickEngagementRate(resolvedVariant)
   console.info('[SIMULATION] Starting simulated user session', {
-    variant,
+    variant: resolvedVariant,
     engagementRate: Number(engagementRate.toFixed(3))
   })
 
